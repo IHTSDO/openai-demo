@@ -10,7 +10,7 @@ Therefore, it is important to use caution when relying on or interpreting the ou
 
 ## Demo site
 
-https://ihtsdo.github.io/sct-definitions-annotations/
+https://sct-openai.vercel.app/
 
 ## How to run locally
 

@@ -1,0 +1,15 @@
+.tile-content {
+    position: absolute;
+    left: 5px;
+    width: 100%;
+}
+
+.tile-content-right {
+    text-align: right;
+    width: 100%;
+    margin-left: 50px;
+}
+
+#bindings {
+    margin-top: 30px;
+}

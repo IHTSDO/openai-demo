@@ -1,0 +1,23 @@
+<div *ngIf="!binding.hide">
+    <span class="chip">
+        <span class="chip-content">Demo UI: Autocomplete</span>
+    </span>
+    <button mat-raised-button color="primary" (click)="openDialog()">BINDING</button>
+</div>
+
+<br>
+<mat-form-field>
+    <input type="text" placeholder="{{binding.title}}" matInput [formControl]="formControl" [matAutocomplete]="auto" [value]="selectedConcept.display">
+    <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete" (optionSelected)="change($event)">
+      <mat-option disabled class="loading" *ngIf="loading">
+        <mat-spinner diameter="35"></mat-spinner>
+      </mat-option>
+      <mat-option *ngFor="let item of (autoFilter | async)?.expansion?.contains"
+        [value]="item">
+        <span class="code">{{item.code}}</span>{{item.display}}
+        <img src="assets/img/ilae-logo.png" alt="image" class="small-logo" *ngIf="binding.annotations[item.code]">
+      </mat-option>
+    </mat-autocomplete>
+</mat-form-field>
+
+<!-- (click)="optionSelected({ code: item.code, display: item.display, annotation: binding.annotations[item.code], definition: '' })" -->

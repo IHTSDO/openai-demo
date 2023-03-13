@@ -1,0 +1,54 @@
+.main-container {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    flex-wrap: wrap;
+    align-items: stretch
+}
+
+.data-entry-box {
+    width: 40%;
+}
+
+.example-full-width {
+    width: 100%;
+}
+
+mat-card-actions button {
+    margin: 10px;
+}
+
+.user-pic {
+    height: 100%;
+    width: 100%;
+    border: 1px solid;
+}
+
+#pic-box {
+    width: 75px;
+    height: 75px;
+}
+
+#patient-name {
+    font-weight: 300;
+    font-size: x-large;
+}
+
+#add-problem {
+    margin-top: 10px;
+}
+
+.mat-list .mat-list-item {
+    height: 40px; /* default is 72px */
+}
+
+.normal-logo {
+    height: 40px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.annotation {
+    font-style: italic;
+    font-weight: 300;
+}

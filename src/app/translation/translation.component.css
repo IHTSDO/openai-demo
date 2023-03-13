@@ -1,0 +1,39 @@
+.key-container {
+  width: 80%;
+  border-radius: 3px;
+}
+
+.large-input {
+  width: 60%;
+}
+
+.child-container {
+  width: 40%;
+  border-radius: 3px;
+}
+
+.example-full-width {
+  width: 100%;
+}
+
+.mat-card{
+  display:flex;
+  flex-direction: column;
+}
+
+.mat-card-header {
+  flex-shrink: 0;
+}
+
+.mat-card-content{
+  flex-grow: 1;
+  overflow: auto;
+}
+
+#api-key-ready {
+  color: green !important;
+}
+
+.result {
+  width: 90%
+}

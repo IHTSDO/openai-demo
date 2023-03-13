@@ -1,0 +1,52 @@
+.example-full-width {
+    width: 100%;
+}
+
+.mat-card{
+    display:flex;
+    flex-direction: column;
+  }
+  
+  .mat-card-header {
+    flex-shrink: 0;
+  }
+  
+  .mat-card-content{
+    flex-grow: 1;
+    overflow: auto;
+  }
+.nlp-output {
+  margin: 15px;
+  max-width: 85%;
+}
+
+.status-ok {
+  color: green;
+  margin-left: 20px;
+  font-style: italic;
+  font-weight: lighter;
+}
+
+.status-error {
+  color: red;
+  margin-left: 20px;
+  font-style: italic;
+  font-weight: lighter;
+}
+
+
+.mat-column-snomed {
+  word-wrap: break-word !important;
+  white-space: unset !important;
+  flex: 0 0 30% !important;
+  width: 30% !important;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+
+  word-break: break-word;
+
+  -ms-hyphens: auto;
+  -moz-hyphens: auto;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}

@@ -1,0 +1,29 @@
+.example-spacer {
+    flex: 1 1 auto;
+  }
+
+button {
+    margin-left: 15px;
+}
+
+a {
+    margin-left: 15px;
+}
+
+#title {
+    margin-left: 15px;
+}
+
+::ng-deep.mat-menu-panel {
+    max-width:fit-content !important;
+    overflow-x: hidden !important;
+}
+
+button {
+    overflow-x: hidden !important;
+}
+
+.mat-toolbar {
+    background-color: black;
+    color: white; /* add this line to change the text color to white */
+  }

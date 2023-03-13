@@ -1,0 +1,37 @@
+<mat-toolbar color="primary">
+  <img src="assets/img/small_logo.png" height="60px">
+  <span id="title">SNOMED - OpenAI Demo</span>
+  <span class="example-spacer"></span>
+  
+  <!-- <button mat-raised-button color="accent" [matMenuTriggerFor]="serverMenu">FHIR Server: {{selectedServer.name}}</button>
+  <mat-menu #serverMenu="matMenu">
+    <button mat-menu-item *ngFor="let server of fhirServers" (click)="setFhirServer(server)">{{server.name}}</button>
+  </mat-menu>
+
+  <button mat-raised-button color="accent" [matMenuTriggerFor]="editionsMenu">{{selectedEdition}}</button>
+  <mat-menu #editionsMenu="matMenu" class="wide-menu">
+    <ng-container *ngFor="let mainItem of editionsDetails">
+      <button mat-menu-item [matMenuTriggerFor]="sub_menu">{{ mainItem.editionName }}</button>
+      <mat-menu #sub_menu="matMenu">
+        <button *ngFor="let subItem of mainItem.editions" mat-menu-item (click)="setEdition(subItem)">
+          {{ subItem.resource.version.substr(subItem.resource.version.lastIndexOf('/')+1) }}
+        </button>
+      </mat-menu>
+    </ng-container>
+  </mat-menu> -->
+  
+  <!-- <button mat-raised-button color="accent" [matMenuTriggerFor]="menu">{{selectedLanguage}}</button>
+  <mat-menu #menu="matMenu">
+    <button mat-menu-item *ngFor="let language of languages" (click)="setLanguage(language)">{{language}}</button>
+  </mat-menu> -->
+
+  <!-- <button mat-raised-button color="accent" (click)="this.excelService.exportAsExcelFile(this.bindingsForExport, 'bindings')">
+    <mat-icon>cloud_download</mat-icon>&nbsp;&nbsp;Export Bindings
+  </button> -->
+
+  <a href="https://github.com/IHTSDO/sct-definitions-annotations" target="_blank" mat-raised-button color="primary"><mat-icon>info</mat-icon></a>
+
+</mat-toolbar>
+<app-single-coding></app-single-coding>
+
+  

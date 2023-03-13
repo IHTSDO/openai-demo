@@ -1,0 +1,27 @@
+<h1 mat-dialog-title>{{data.title}}</h1>
+<h3>ECL - Terminology Binding</h3>
+<div fxLayout="row" fxLayoutAlign=" start" >
+    <pre>
+        <code [innerHTML]="data.ecl"></code>
+    </pre>
+    <button mat-icon-button color="primary" [cdkCopyToClipboard]="data.ecl" matTooltip="Copy ECL to clipboard"><mat-icon>content_copy</mat-icon></button>
+    <a mat-icon-button color="primary" href="{{ expandUrl }}" target="_blank" matTooltip="Open FHIR endpoint"><mat-icon>open_in_new</mat-icon></a>
+</div>
+<h3>Expansion (<span *ngIf="!loading">{{expansionLength}} of {{total}}</span>
+    <span *ngIf="loading">-</span>)</h3>
+<div mat-dialog-content>
+    <mat-list dense>
+        <mat-list-item *ngFor="let item of expansion">
+            {{ item.display }} &nbsp;-&nbsp; <span class="muted">{{ item.code }}</span>
+        </mat-list-item>
+        <button mat-button color="primary" *ngIf="total > expansionLength && !loading" (click)="loadPage()">
+            {{total - expansionLength}} concepts remaining. Click to load more...
+        </button>
+        <mat-list-item *ngIf="loading">
+            <mat-spinner [diameter]="20"></mat-spinner>
+        </mat-list-item>
+    </mat-list>
+</div>
+<div mat-dialog-actions>
+  <button mat-raised-button color="primary" (click)="onNoClick()">Close</button>
+</div>

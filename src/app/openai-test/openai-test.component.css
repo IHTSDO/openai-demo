@@ -1,0 +1,92 @@
+.key-container {
+    width: 80%;
+    border-radius: 3px;
+}
+
+.large-input {
+    width: 60%;
+}
+
+.child-container {
+    width: 42%;
+    border-radius: 3px;
+    min-height: 400px;
+}
+
+.wide-container {
+  width: 85%;
+  border-radius: 3px;
+}
+
+.example-full-width {
+    width: 100%;
+}
+
+.h-container {
+  display: flex;
+  flex-direction: row;
+  align-content: stretch;
+}
+
+.tab-label-icon-OK {
+  color: green;
+  margin-left: 10px;
+}
+
+.tab-label-icon-error {
+  color: red;
+  margin-left: 10px;
+}
+
+.error {
+  color: red;
+  font-weight: bolder;
+}
+
+.mat-card{
+    display:flex;
+    flex-direction: column;
+  }
+  
+  .mat-card-header {
+    flex-shrink: 0;
+  }
+  
+  .mat-card-content{
+    flex-grow: 1;
+    overflow: auto;
+  }
+
+  #api-key-ready {
+    color: green !important;
+  }
+
+  .key-button {
+    margin: 10px;
+  }
+
+  .circle {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    margin: 20px;
+    position: absolute;
+    top: 40px;
+    right: 40px;
+  }
+  
+  .red {
+    background-color: red;
+    box-shadow: 0 0 10px 5px rgba(255,0,0,0.5);
+  }
+  
+  .green {
+    background-color: green;
+    box-shadow: 0 0 10px 5px rgba(0,255,0,0.5);
+  }
+  
+  .yellow {
+    background-color: yellow;
+    box-shadow: 0 0 10px 5px rgba(255,255,0,0.5);
+  }
+  

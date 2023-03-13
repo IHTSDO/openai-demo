@@ -1,0 +1,81 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+  }
+  
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: rgb(170, 163, 163);
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 5px 0;
+    font-size: x-small;
+    line-height: normal;
+    padding: 10px;
+  
+    /* Position the tooltip */
+    position: absolute;
+    z-index: 1;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px; /* Use half of the width (120/2 = 60), to center the tooltip */
+}
+  
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
+
+.Finding {
+    background-color: rgb(86, 241, 86);
+    color: black;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+.Symptom {
+    background-color: rgb(241, 86, 231);
+    color: black;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+.Disorder {
+    background-color: rgb(86, 130, 241);
+    color: black;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+.Procedure {
+    background-color: rgb(241, 86, 122);
+    color: black;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+.Morphology {
+    background-color: yellow;
+    color: black;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+.Medication {
+    background-color: rgb(167, 171, 242);
+    color: black;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+
+.absent {
+    border: 2px solid red;
+}

@@ -1,0 +1,20 @@
+<mat-card class="main-card">
+    <mat-card-title>Term generation from expression</mat-card-title>
+    <mat-card-content>
+        <mat-form-field class="example-full-width">
+            <mat-label>Postcoordinated Expression</mat-label>
+            <textarea matInput placeholder="Enter expression..." rows="10" [(ngModel)]="pcExpression"></textarea>
+        </mat-form-field>
+        <br><br>
+        <h2><app-typewriter [message]="result"></app-typewriter></h2>
+        <mat-spinner diameter="30" *ngIf="loadingPce"></mat-spinner>
+    </mat-card-content>
+    <mat-card-actions>
+        <button mat-flat-button color="primary" (click)="runPCECompletion()">Generate Term</button>
+        &nbsp;&nbsp;
+        <mat-radio-group aria-label="Select an option" [(ngModel)]="termStyle">
+            <mat-radio-button value="1">Concise</mat-radio-button>&nbsp;&nbsp;
+            <mat-radio-button value="2">Comprehensive</mat-radio-button>
+        </mat-radio-group>
+    </mat-card-actions>
+</mat-card>

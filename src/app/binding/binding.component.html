@@ -1,0 +1,16 @@
+<div id="bindings" *ngFor="let binding of bindings">
+    <mat-grid-list cols="2" rowHeight="200px">
+        <mat-grid-tile>
+            <div class="tile-content">
+                <h2>{{ binding.title }}</h2>
+                <p>{{ binding.note }}</p>
+            </div>
+        </mat-grid-tile>
+        <mat-grid-tile>
+            <div class="tile-content-right">
+                <app-autocomplete-binding [binding]="binding" *ngIf="binding.type == 'autocomplete'"></app-autocomplete-binding>
+                <app-dropdown-binding [binding]="binding" *ngIf="binding.type == 'dropdown'"></app-dropdown-binding>
+            </div>
+        </mat-grid-tile>
+    </mat-grid-list>
+</div>

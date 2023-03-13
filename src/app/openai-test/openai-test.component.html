@@ -1,0 +1,56 @@
+<mat-tab-group class="example-full-width" #mainTabGroup>
+    <mat-tab label="Term generation" [disabled]="!apiKey">
+        <div class="h-container">
+            <app-description-generator [apiKey]="apiKey"  class="child-container"></app-description-generator>
+            <app-patient-friendly [apiKey]="apiKey"  class="child-container"></app-patient-friendly>
+        </div>
+    </mat-tab>
+    <mat-tab label="NLP" [disabled]="!apiKey">
+        <app-nlp [apiKey]="apiKey" class="wide-container"></app-nlp>
+    </mat-tab>
+    <mat-tab label="Explain" [disabled]="!apiKey">
+        <div class="h-container">
+            <app-ecl-explain [apiKey]="apiKey"  class="child-container"></app-ecl-explain>
+            <app-fhir-summarize [apiKey]="apiKey"  class="child-container"></app-fhir-summarize>        </div>
+    </mat-tab>
+    <mat-tab label="Translation" [disabled]="!apiKey">
+        <app-translation [apiKey]="apiKey"  class="child-container"></app-translation>
+    </mat-tab>
+    <mat-tab label="Q&A" [disabled]="!apiKey">
+        <app-support-question [apiKey]="apiKey"  class="child-container"></app-support-question>
+    </mat-tab>
+    <mat-tab>
+        <ng-template mat-tab-label>
+            OpenAI API
+            <mat-icon fontIcon="check_circle" class="tab-label-icon-OK" *ngIf="apiKey"></mat-icon>
+            <mat-icon fontIcon="error" class="tab-label-icon-error" *ngIf="!apiKey"></mat-icon>
+        </ng-template>
+        <div class="wide-container">
+            <mat-card>
+                <p class="error" *ngIf="!apiKey">OpenAI API connection not configured!</p>
+                <mat-form-field class="large-input" *ngIf="!apiKey">
+                    <mat-label>OpenAI API Key</mat-label>
+                    <input matInput placeholder="Paste API Key..." value="" type="password" [(ngModel)]="apiKeyInInput">
+                </mat-form-field>
+                <p *ngIf="!apiKey">Enter a secret API Key from OpenAI (<a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key" target="_blank">More information</a>). 
+                The key will be saved in your browser only.</p>
+                <h3 *ngIf="apiKey" id="api-key-ready">
+                    <mat-icon fontIcon="check_circle"></mat-icon>
+                    OpenAI Key Ready
+                </h3>
+                <p *ngIf="apiKey">Using model {{ getModel()}} from OpenAI (<a href="https://help.openai.com/en/collections/3675931-openai-api" target="_blank">More information</a>)</p>
+                <mat-card-actions>
+                    <button mat-flat-button color="primary" (click)="saveToLocalStorage(storageKey,apiKeyInInput)" *ngIf="!apiKey" class="key-button">
+                        Save Key
+                    </button>
+                    <button mat-flat-button color="primary" (click)="removeFromLocalStorage(storageKey)" *ngIf="apiKey" class="key-button">
+                        Remove Key
+                    </button>
+                    <button mat-flat-button color="primary" (click)="clearCache()" *ngIf="apiKey" class="key-button">
+                        Clear local cache
+                    </button>
+                </mat-card-actions>
+            </mat-card>
+        </div>
+    </mat-tab>
+</mat-tab-group>

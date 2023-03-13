@@ -1,0 +1,16 @@
+<mat-card class="main-card">
+    <mat-card-title>Explain ECL Query</mat-card-title>
+    <mat-card-content>
+        <mat-form-field class="example-full-width">
+            <mat-label>ECL Query</mat-label>
+            <textarea matInput placeholder="Enter expression..." rows="10" [(ngModel)]="eclToExplain"></textarea>
+        </mat-form-field>
+        <br><br>
+        <h3>Explanation:</h3>
+        <p><app-typewriter [message]="explainResult"></app-typewriter></p>
+        <mat-spinner diameter="30" *ngIf="loadingExplain"></mat-spinner>
+    </mat-card-content>
+    <mat-card-actions>
+        <button mat-flat-button color="primary" (click)="runEclExplanation()">Explain</button>
+    </mat-card-actions>
+</mat-card>

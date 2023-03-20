@@ -10,7 +10,7 @@ Therefore, it is important to use caution when relying on or interpreting the ou
 
 ## Demo site
 
-https://sct-openai.vercel.app/
+https://ihtsdo.github.io/openai-demo/
 
 ## How to run locally
 

@@ -23,7 +23,6 @@ import { BindingDetailsComponent } from './binding-details/binding-details.compo
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatListModule } from '@angular/material/list';
 import { ClipboardModule } from '@angular/cdk/clipboard';
-import { FlexLayoutModule } from '@angular/flex-layout';
 import { DropdownBindingComponent } from './dropdown-binding/dropdown-binding.component';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -86,7 +85,6 @@ import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.
     MatDialogModule,
     MatListModule,
     ClipboardModule,
-    FlexLayoutModule,
     MatMenuModule,
     MatTooltipModule,
     MatCardModule,

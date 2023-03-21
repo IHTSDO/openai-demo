@@ -121,13 +121,10 @@ export class FhirSummarizeComponent implements OnInit {
       this.loadingFhirSummary = true;
       this.fhirSummaryResult = "";
       const prompt = [ {role: "user", content: `Write a narrative summary of the FHIR resource "${this.fhirResource}" as a doctor would present this patient to his colleagues`}];
-      const completion = await this.openaiService.completion(prompt, 500, 0);
+      const completion = await this.openaiService.completion(prompt, 1000, 0);
       const response = completion.data.choices[0].message?.content;
       if (response) {
         this.fhirSummaryResult = response.slice(2).replace(/\"/g, '');
-        if (this.fhirSummaryResult.endsWith(".")) {
-          this.fhirSummaryResult = this.fhirSummaryResult.slice(0, -1);
-        }
       }
       this.loadingFhirSummary = false;
     } catch(err) {

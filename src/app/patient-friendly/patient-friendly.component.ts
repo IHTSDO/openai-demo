@@ -23,6 +23,64 @@ export class PatientFriendlyComponent implements OnInit {
   ];
   sourceTextPt = this.terms[0];
 
+  languages = [
+    "Albanian",
+    "Armenian",
+    "Azerbaijani",
+    "Basque",
+    "Belarusian",
+    "Bosnian",
+    "Bulgarian",
+    "Catalan",
+    "Croatian",
+    "Czech",
+    "Danish",
+    "Dutch",
+    "English",
+    "Estonian",
+    "Finnish",
+    "French",
+    "Galician",
+    "Georgian",
+    "German",
+    "Greek",
+    "Hungarian",
+    "Icelandic",
+    "Irish",
+    "Italian",
+    "Kazakh",
+    "Latvian",
+    "Lithuanian",
+    "Luxembourgish",
+    "Macedonian",
+    "Maltese",
+    "Moldovan",
+    "Montenegrin",
+    "Norwegian",
+    "Polish",
+    "Portuguese",
+    "Romanian",
+    "Russian",
+    "Serbian",
+    "Slovak",
+    "Slovenian",
+    "Spanish",
+    "Swedish",
+    "Turkish",
+    "Ukrainian",
+    "Chinese (Mandarin)",
+    "Hindi",
+    "Arabic",
+    "Bengali",
+    "Indonesian",
+    "Urdu",
+    "Japanese",
+    "Swahili",
+    "Korean",
+    "Thai"
+  ];
+
+  language = "English"
 
   constructor(private openaiService: OpenaiService) { }
 
@@ -38,11 +96,13 @@ export class PatientFriendlyComponent implements OnInit {
     try {
       this.loadingPt = true;
       this.ptResult = "";
-      const prompt = [ {role: "user", content: `Create a patient friendly term for the clinical description "${this.sourceTextPt}"`}];
+      const prompt = [ {role: "user", content: `Explain this term with a short phrase that a patient can understand, without repeating the source term, in ${this.language} language: "${this.sourceTextPt}"`}];
       const completion = await this.openaiService.completion(prompt, 500, 0);
       const response = completion.data.choices[0].message?.content;
       if (response) {
-        this.ptResult = response.slice(2).replace(/\"/g, '');
+        this.ptResult = response.replace(/\"/g, '');
+        // remove sematic tag
+        this.ptResult = this.ptResult.replace(/\(.*?\)/g, '');
         if (this.ptResult.endsWith(".")) {
           this.ptResult = this.ptResult.slice(0, -1);
         }

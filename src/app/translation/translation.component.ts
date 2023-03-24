@@ -10,7 +10,62 @@ export class TranslationComponent implements OnInit {
   @Input() apiKey: string = "";
 
   language = "Spanish";
-  languages = ["Spanish", "Danish", "French", "German", "Swedish","English", "Korean", "Indonesian"];
+  languages = [
+    "Albanian",
+    "Armenian",
+    "Azerbaijani",
+    "Basque",
+    "Belarusian",
+    "Bosnian",
+    "Bulgarian",
+    "Catalan",
+    "Croatian",
+    "Czech",
+    "Danish",
+    "Dutch",
+    "English",
+    "Estonian",
+    "Finnish",
+    "French",
+    "Galician",
+    "Georgian",
+    "German",
+    "Greek",
+    "Hungarian",
+    "Icelandic",
+    "Irish",
+    "Italian",
+    "Kazakh",
+    "Latvian",
+    "Lithuanian",
+    "Luxembourgish",
+    "Macedonian",
+    "Maltese",
+    "Moldovan",
+    "Montenegrin",
+    "Norwegian",
+    "Polish",
+    "Portuguese",
+    "Romanian",
+    "Russian",
+    "Serbian",
+    "Slovak",
+    "Slovenian",
+    "Spanish",
+    "Swedish",
+    "Turkish",
+    "Ukrainian",
+    "Chinese (Mandarin)",
+    "Hindi",
+    "Arabic",
+    "Bengali",
+    "Indonesian",
+    "Urdu",
+    "Japanese",
+    "Swahili",
+    "Korean",
+    "Thai"
+  ];
   terms = [
     'Total replacement of hip (procedure)',
     'Neonatal aspiration pneumonia (disorder)',
@@ -24,6 +79,8 @@ export class TranslationComponent implements OnInit {
   constructor(private openaiService: OpenaiService) { }
 
   ngOnInit(): void {
+    // sort languages alphabetically
+    this.languages.sort();
   }
 
   run(term: string) {

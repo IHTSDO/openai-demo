@@ -2,6 +2,14 @@
     <mat-card-title>Patient Friendly Term Generator</mat-card-title>
     <mat-card-content>
         <mat-form-field class="example-full-width">
+            <mat-label>Target language</mat-label>
+            <mat-select [(ngModel)]="language">
+                <mat-option *ngFor="let loopLang of languages" [value]="loopLang">
+                {{loopLang}}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field class="example-full-width">
             <mat-label>Original clinical text</mat-label>
             <textarea matInput placeholder="Enter text..." rows="5" [(ngModel)]="sourceTextPt"></textarea>
         </mat-form-field>

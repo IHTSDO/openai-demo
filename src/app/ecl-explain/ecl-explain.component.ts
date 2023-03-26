@@ -28,13 +28,10 @@ export class EclExplainComponent implements OnInit {
       this.explainResult = "";
       const ecl = this.eclToExplain.replace(/(\r\n|\n|\r)/gm, "");
       const prompt = [ {role: "user", content: `Explain this SNOMED CT constraint query expression "${ecl}"`}];
-      const completion = await this.openaiService.completion(prompt, 500, 0.8);
+      const completion = await this.openaiService.completion(prompt, 1000, 0.8);
       const response = completion.data.choices[0].message?.content;
       if (response) {
-        this.explainResult = response.slice(2).replace(/\"/g, '');
-        if (this.explainResult.endsWith(".")) {
-          this.explainResult = this.explainResult.slice(0, -1);
-        }
+        this.explainResult = response.replace(/\"/g, '');
       }
       this.loadingExplain = false;
     } catch(err) {

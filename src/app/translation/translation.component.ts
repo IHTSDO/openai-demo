@@ -96,7 +96,7 @@ export class TranslationComponent implements OnInit {
       const completion = await this.openaiService.completion(prompt, 500, 0.8);
       const response = completion.data.choices[0].message?.content;
       if (response) {
-        this.translationResult = response.slice(2).replace(/\"/g, '');
+        this.translationResult = response.replace(/\"/g, '');
         if (this.translationResult.endsWith(".")) {
           this.translationResult = this.translationResult.slice(0, -1);
         }

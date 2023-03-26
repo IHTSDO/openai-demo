@@ -40,7 +40,7 @@ export class DescriptionGeneratorComponent implements OnInit {
       const completion = await this.openaiService.completion([{role: "user", content: prompt}], 500, 0);
       const response = completion.data.choices[0].message?.content;
       if (response) {
-        this.result = response.slice(2).replace(/\"/g, '');
+        this.result = response.replace(/\"/g, '');
         if (this.result.endsWith(".")) {
           this.result = this.result.slice(0, -1);
         }

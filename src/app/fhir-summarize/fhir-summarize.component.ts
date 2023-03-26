@@ -124,7 +124,7 @@ export class FhirSummarizeComponent implements OnInit {
       const completion = await this.openaiService.completion(prompt, 1000, 0);
       const response = completion.data.choices[0].message?.content;
       if (response) {
-        this.fhirSummaryResult = response.slice(2).replace(/\"/g, '');
+        this.fhirSummaryResult = response.replace(/\"/g, '');
       }
       this.loadingFhirSummary = false;
     } catch(err) {

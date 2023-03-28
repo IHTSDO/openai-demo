@@ -19,8 +19,8 @@ export class AppComponent {
   fhirServers = [
     // { name: "SNOMED Public", url: "https://dev-is-browser.ihtsdotools.org/fhir"},
     // { name: "Daily build", url: "https://dailybuild.ihtsdotools.org/fhir"}
-    // { name: "SNOMED Public", url: "https://snowstorm.ihtsdotools.org/fhir"}
-    { name: "SNOMED Dev IS", url: "https://dev-is-browser.ihtsdotools.org/fhir"},
+    { name: "SNOMED Public", url: "https://snowstorm.ihtsdotools.org/fhir"}
+    // { name: "SNOMED Dev IS", url: "https://dev-is-browser.ihtsdotools.org/fhir"},
   ];
   selectedServer = this.fhirServers[0];
 

@@ -81,6 +81,12 @@ export class NlpComponent implements OnInit {
           this.entities = this.entities.filter((entity: any) => 
             entity.type == "F" || entity.type == "Mo" || entity.type == "P" || entity.type == "M"
             );
+          // removed repeated entities matching on singularFsn
+          this.entities = this.entities.filter((entity: any, index: number, self: any) =>
+            index === self.findIndex((t: any) => (
+              t.singularFsn === entity.singularFsn
+            ))
+          );
           this.status = `Found ${this.entities.length} clinical entities. Matching with SNOMED CT`;
           await this.matchWithSnomed(this.entities);
           this.nlpResult = JSON.stringify(this.entities, null, 2);

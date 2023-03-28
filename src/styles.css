@@ -34,42 +34,42 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 
 .Finding {
-    background-color: rgb(86, 241, 86);
+    background-color: rgb(135, 238, 135);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;
     border: 2px solid black;
 }
 .Symptom {
-    background-color: rgb(241, 86, 231);
+    background-color: rgb(144, 242, 213);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;
     border: 2px solid black;
 }
 .Disorder {
-    background-color: rgb(86, 130, 241);
+    background-color: rgb(115, 151, 245);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;
     border: 2px solid black;
 }
 .Procedure {
-    background-color: rgb(241, 86, 122);
+    background-color: rgb(237, 194, 119);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;
     border: 2px solid black;
 }
 .Morphology {
-    background-color: yellow;
+    background-color: rgb(229, 123, 236);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;
     border: 2px solid black;
 }
 .Medication {
-    background-color: rgb(167, 171, 242);
+    background-color: rgb(90, 85, 238);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;

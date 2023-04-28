@@ -1,0 +1,48 @@
+<div class="h-container">
+    <mat-card class="child-container">
+        <mat-card-title>Step 1</mat-card-title>
+        <mat-card-content>
+            <mat-form-field class="example-full-width">
+                <mat-label>Prompt One</mat-label>
+                <textarea matInput placeholder="Enter prompt..." rows="10" [(ngModel)]="promptOne"></textarea>
+            </mat-form-field>
+            <mat-form-field class="example-full-width">
+                <mat-label>Case</mat-label>
+                <textarea matInput placeholder="Enter prompt..." rows="10" [(ngModel)]="case"></textarea>
+            </mat-form-field>
+            <br>
+            <button mat-flat-button color="primary" (click)="runPromptOne()">Run</button>
+            <br> <br>
+            <pre *ngIf="responseOneContent">{{ responseOneContent | json }}</pre>
+            <mat-spinner diameter="30" *ngIf="loadingResponseOne"></mat-spinner>
+        </mat-card-content>
+    </mat-card>
+    <mat-card class="child-container">
+        <mat-card-title>Step 2</mat-card-title>
+        <mat-card-content>
+            <mat-form-field class="example-full-width">
+                <mat-label>Prompt Two</mat-label>
+                <textarea matInput placeholder="Enter prompt..." rows="10" [(ngModel)]="promptTwo"></textarea>
+            </mat-form-field>
+            <br>
+            <button mat-flat-button color="primary" (click)="runPromptTwo()">Run</button>
+            <br> <br>
+            <pre *ngIf="responseTwoContent">{{ responseTwoContent | json }}</pre>
+            <mat-spinner diameter="30" *ngIf="loadingResponseTwo"></mat-spinner>
+        </mat-card-content>
+    </mat-card>
+    <mat-card class="child-container">
+        <mat-card-title>Step 3</mat-card-title>
+        <mat-card-content>
+            <mat-form-field class="example-full-width">
+                <mat-label>Prompt three</mat-label>
+                <textarea matInput placeholder="Enter prompt..." rows="10" [(ngModel)]="promptThree"></textarea>
+            </mat-form-field>
+            <br>
+            <button mat-flat-button color="primary" (click)="runPromptThree()">Run</button>
+            <br> <br>
+            <pre *ngIf="responseThreeContent">{{ responseThreeContent | json }}</pre>
+            <mat-spinner diameter="30" *ngIf="loadingResponseThree"></mat-spinner>
+        </mat-card-content>
+    </mat-card>
+</div>

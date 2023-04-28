@@ -19,6 +19,9 @@
     <mat-tab label="Q&A" [disabled]="!apiKey">
         <app-support-question [apiKey]="apiKey"  class="child-container"></app-support-question>
     </mat-tab>
+    <mat-tab label="Playground" [disabled]="!apiKey">
+        <app-playground [apiKey]="apiKey"  class="child-container"></app-playground>
+    </mat-tab>
     <mat-tab>
         <ng-template mat-tab-label>
             OpenAI API

@@ -43,6 +43,7 @@ import { SupportQuestionComponent } from './support-question/support-question.co
 import { FhirSummarizeComponent } from './fhir-summarize/fhir-summarize.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.component';
+import { PlaygroundComponent } from './playground/playground.component';
 
 @NgModule({
   declarations: [
@@ -64,6 +65,7 @@ import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.
     SupportQuestionComponent,
     FhirSummarizeComponent,
     AiWarningDialogComponent,
+    PlaygroundComponent,
   ],
   imports: [
     BrowserModule,

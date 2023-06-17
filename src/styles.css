@@ -70,6 +70,14 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 }
 .Medication {
     background-color: rgb(90, 85, 238);
+    color: white;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+    border: 2px solid black;
+}
+
+.BodyStructure {
+    background-color: rgb(223, 238, 85);
     color: black;
     border-radius: 20px;
     padding: 0.2em 0.5em;

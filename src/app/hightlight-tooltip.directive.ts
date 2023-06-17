@@ -33,6 +33,8 @@ export class HighlightTooltipDirective implements OnChanges {
         localType = "Medication";
       } else if (entity.type == "Mo") {
         localType = "Morphology";
+      } else if (entity.type == "B") {
+        localType = "BodyStructure";
       }
       newInnerHtml = newInnerHtml.replace(regEx,`
       <mark class="tooltip ${localType} ${entity.context}">

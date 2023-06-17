@@ -23,7 +23,7 @@
     "file-saver": "^2.0.5",
     "ngx-cookie-service": "^15.0.0",
     "ngx-webstorage-service": "^5.0.0",
-    "openai": "^3.2.1",
+    "openai": "^3.3.0",
     "rxjs": "~7.5.0",
     "tslib": "^2.3.0",
     "xlsx": "^0.18.4",

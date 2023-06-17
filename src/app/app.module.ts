@@ -44,6 +44,7 @@ import { FhirSummarizeComponent } from './fhir-summarize/fhir-summarize.componen
 import { MatChipsModule } from '@angular/material/chips';
 import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.component';
 import { PlaygroundComponent } from './playground/playground.component';
+import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
 
 @NgModule({
   declarations: [
@@ -66,6 +67,7 @@ import { PlaygroundComponent } from './playground/playground.component';
     FhirSummarizeComponent,
     AiWarningDialogComponent,
     PlaygroundComponent,
+    NlpFunctionComponent
   ],
   imports: [
     BrowserModule,

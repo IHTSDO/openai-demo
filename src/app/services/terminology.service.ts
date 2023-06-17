@@ -52,21 +52,27 @@ export class TerminologyService {
   }
 
   matchText(text: string, type: string): Observable<any> {
-    let ecl = '';
-    if (type == 'F') {
-      ecl = `<< 404684003 |Clinical finding|`;
-    } else if (type == 'P') {
-      ecl = `<< 71388002 |Procedure|`;
-    } else if (type == 'M') {
-      ecl = `<< 373873005 |Pharmaceutical / biologic product (product)|`;
-    } else if (type == 'Mo') {
-      // treat found morphology as a clinical finding
-      ecl = `<< 404684003 |Clinical finding|`;
-      // ecl = `<< 123037004 |Body structure (body structure)|`;
+    if (text.length < 3) {
+      return of([]);
+    } else {
+      let ecl = '';
+      if (type == 'F') {
+        ecl = `<< 404684003 |Clinical finding|`;
+      } else if (type == 'P') {
+        ecl = `<< 71388002 |Procedure|`;
+      } else if (type == 'M') {
+        ecl = `<< 373873005 |Pharmaceutical / biologic product (product)|`;
+      } else if (type == 'Mo') {
+        // treat found morphology as a clinical finding
+        ecl = `<< 404684003 |Clinical finding|`;
+        // ecl = `<< 123037004 |Body structure (body structure)|`;
+      } else if (type == 'B') {
+        ecl = `<< 123037004 |Body structure (body structure)|`;
+      }
+      return this.expandValueSet(ecl, text, 0, 1).pipe(
+        catchError(this.handleError<any>('expandValueSet', {}))
+      );
     }
-    return this.expandValueSet(ecl, text, 0, 1).pipe(
-      catchError(this.handleError<any>('expandValueSet', {}))
-    );
   }
 
   private handleError<T>(operation = 'operation', result?: T) {

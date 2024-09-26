@@ -34,6 +34,10 @@
         <div class="wide-container">
             <mat-card>
                 <p class="error" *ngIf="!apiKey">OpenAI API connection not configured!</p>
+                <mat-form-field class="large-input">
+                    <mat-label>OpenAI Model Identifier</mat-label>
+                    <input matInput placeholder="Enter model id" [(ngModel)]="apiModel" (ngModelChange)="onApiModelChange($event)">
+                </mat-form-field>
                 <mat-form-field class="large-input" *ngIf="!apiKey">
                     <mat-label>OpenAI API Key</mat-label>
                     <input matInput placeholder="Paste API Key..." value="" type="password" [(ngModel)]="apiKeyInInput">
@@ -44,7 +48,7 @@
                     <mat-icon fontIcon="check_circle"></mat-icon>
                     OpenAI Key Ready
                 </h3>
-                <p *ngIf="apiKey">Using model {{ getModel()}} from OpenAI (<a href="https://help.openai.com/en/collections/3675931-openai-api" target="_blank">More information</a>)</p>
+                <p *ngIf="apiKey">Using model {{ apiModel }} from OpenAI (<a href="https://help.openai.com/en/collections/3675931-openai-api" target="_blank">More information</a>)</p>
                 <mat-card-actions>
                     <button mat-flat-button color="primary" (click)="saveToLocalStorage(storageKey,apiKeyInInput)" *ngIf="!apiKey" class="key-button">
                         Save Key

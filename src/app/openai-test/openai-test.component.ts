@@ -1,4 +1,4 @@
-import { Component, OnInit, InjectionToken, Inject, ViewChild } from '@angular/core';
+import { Component, OnInit, InjectionToken, Inject, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
 import { Configuration, OpenAIApi } from "openai";
 import { LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 import { CacheService } from '../services/cache.service';
@@ -12,24 +12,26 @@ import { AiWarningDialogComponent } from '../ai-warning-dialog/ai-warning-dialog
   templateUrl: './openai-test.component.html',
   styleUrls: ['./openai-test.component.css']
 })
-export class OpenaiTestComponent implements OnInit {
+export class OpenaiTestComponent implements OnInit, OnChanges {
   @ViewChild('mainTabGroup') tabGroup!: MatTabGroup;
 
   result = "";
   storageKey = "tempDataSct";
   apiKey: string = "";
   apiKeyInInput: string = ""
+  apiModel = "";
 
   constructor(@Inject(LOCAL_STORAGE) private storage: StorageService,
               private cacheService: CacheService, private openaiService: OpenaiService,
               public dialog: MatDialog) { }
 
   ngOnInit(): void {
+    this.apiModel = this.openaiService.getModel();
     this.apiKey = this.storage.get(this.storageKey)
     // runb this check aftwe 1 second to allow the tab group to be initialized
     setTimeout(() => {
       if (!this.apiKey) {
-        this.tabGroup.selectedIndex = 5;
+        this.tabGroup.selectedIndex = 7;
       }
     }, 500);
     const dialogRef = this.dialog.open(AiWarningDialogComponent);
@@ -38,8 +40,8 @@ export class OpenaiTestComponent implements OnInit {
     });
   }
 
-  getModel() {
-    return this.openaiService.getModel();
+  ngOnChanges(changes: SimpleChanges): void {
+    console.log(changes);
   }
 
   clearCache() {
@@ -58,6 +60,11 @@ export class OpenaiTestComponent implements OnInit {
 
   getFromLocalStorage(key: string) {
     return this.storage.get(key);
+  }
+
+  onApiModelChange(newModel: string) {
+    // Add logic here to handle the change in apiModel
+    this.openaiService.setModel(newModel);
   }
 
 }

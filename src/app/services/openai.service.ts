@@ -9,7 +9,7 @@ import { CacheService } from './cache.service';
 export class OpenaiService {
 
   apiKey = '';
-  model = 'gpt-3.5-turbo-16k-0613'; // Original 0301 - gpt-3.5-turbo-0613
+  model = 'gpt-4o-mini'; // Original 0301 - gpt-3.5-turbo-0613
   promptTokensPrice4k35 = 0.0015;
   completionTokensPrice4k35 = 0.002;
   promptTokensPrice16k35 = 0.003;
@@ -20,6 +20,10 @@ export class OpenaiService {
 
   getModel() {
     return this.model;
+  }
+
+  setModel(model: string) {
+    this.model = model;
   }
 
   async completion(messages: any[], maxTokens: number, temperature: number, functions?: any[]): Promise<any>  {

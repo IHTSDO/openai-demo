@@ -11,7 +11,7 @@
           {{ status }}
         </span>
         <br><br>
-        <h2>Result</h2>
+        <h2 *ngIf="nlpResult && ! loadingNlp">Result</h2>
         <p appHighlightTooltip [entities]="entities" [innerHTML]="clinicalText" class="nlp-output" *ngIf="nlpResult"></p>
         <table mat-table [dataSource]="entities" class="example-full-width" *ngIf="nlpResult">
 
@@ -44,5 +44,15 @@
             <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
           </table>
         <mat-spinner diameter="30" *ngIf="loadingNlp"></mat-spinner>
+        <br><br><hr>
+        <div class="info-container">
+          <h2>Methodology</h2>
+          <p>This web demo uses a simplified version of the clinical entity extraction algorithm described in 
+              <a href="https://github.com/IHTSDO/llm-chain-entity-extraction" target="_blank">https://github.com/IHTSDO/llm-chain-entity-extraction</a>.
+          </p>
+          <p>
+              <a href="assets/AI-Chains-ePoster-Expo-2023.pdf" target="_blank">Download the poster</a> describing this experience from 2023 SNOMED Expo.
+          </p>
+      </div>
     </mat-card-content>
 </mat-card>

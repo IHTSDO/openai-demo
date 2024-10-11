@@ -1,15 +1,15 @@
 <mat-tab-group class="example-full-width" #mainTabGroup>
+    <!-- <mat-tab label="NLP" [disabled]="!apiKey">
+        <app-nlp [apiKey]="apiKey" class="wide-container"></app-nlp>
+    </mat-tab> -->
+    <mat-tab label="Entity extraction with LLM Chains" [disabled]="!apiKey">
+        <app-nlp-function [apiKey]="apiKey" class="wide-container"></app-nlp-function>
+    </mat-tab>
     <mat-tab label="Term generation" [disabled]="!apiKey">
         <div class="h-container">
             <app-description-generator [apiKey]="apiKey"  class="child-container"></app-description-generator>
             <app-patient-friendly [apiKey]="apiKey"  class="child-container"></app-patient-friendly>
         </div>
-    </mat-tab>
-    <mat-tab label="NLP" [disabled]="!apiKey">
-        <app-nlp [apiKey]="apiKey" class="wide-container"></app-nlp>
-    </mat-tab>
-    <mat-tab label="NLP v2" [disabled]="!apiKey">
-        <app-nlp-function [apiKey]="apiKey" class="wide-container"></app-nlp-function>
     </mat-tab>
     <mat-tab label="Explain" [disabled]="!apiKey">
         <div class="h-container">
@@ -22,9 +22,9 @@
     <mat-tab label="Q&A" [disabled]="!apiKey">
         <app-support-question [apiKey]="apiKey"  class="child-container"></app-support-question>
     </mat-tab>
-    <mat-tab label="Playground" [disabled]="!apiKey">
+    <!-- <mat-tab label="Playground" [disabled]="!apiKey">
         <app-playground [apiKey]="apiKey"  class="child-container"></app-playground>
-    </mat-tab>
+    </mat-tab> -->
     <mat-tab>
         <ng-template mat-tab-label>
             OpenAI API

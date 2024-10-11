@@ -117,17 +117,14 @@ export class NlpFunctionComponent implements OnInit {
       entity.singularFsn = entity.singularFsn.replace(/(left|right|bilateral|severe|moderate|mild)/gi, '').trim();
     });
     await this.matchWithSnomed(this.entities);
-    const promptTokensPrice4k35 = 0.0015;
-    const completionTokensPrice4k35 = 0.002;
-    const promptTokensPrice16k35 = 0.003;
-    const completionTokensPrice16k35 = 0.004;
+    const modelCost = 0.15;
     // remove entities with no snomed code
     this.entities = this.entities.filter((entity: any) => entity.snomed?.code?.length);
     // remove duplicates with same text
     this.entities = this.entities.filter((entity: any, index: number, self: any[]) => self.findIndex((e: any) => e.text === entity.text) === index);
     const prompt_tokens = completion?.data?.usage?.prompt_tokens;
     const completion_tokens = completion?.data?.usage?.completion_tokens;
-    const cost = (prompt_tokens / 1000 * promptTokensPrice16k35 + completion_tokens / 1000 * completionTokensPrice16k35).toFixed(4);
+    const cost = (prompt_tokens / 1000000 * modelCost + completion_tokens / 1000000 * modelCost).toFixed(4);
     this.nlpResult = JSON.stringify(this.entities, null, 2);
     this.status = `Extracted ${this.entities.length} clinical entities. Cost: $${cost}`;
     // const functionPrompt = {role: "function", name: functionName, content: JSON.stringify(this.entities)};

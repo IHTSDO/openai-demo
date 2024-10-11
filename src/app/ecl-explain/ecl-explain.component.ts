@@ -27,7 +27,7 @@ export class EclExplainComponent implements OnInit {
       this.loadingExplain = true;
       this.explainResult = "";
       const ecl = this.eclToExplain.replace(/(\r\n|\n|\r)/gm, "");
-      const prompt = [ {role: "user", content: `Explain this SNOMED CT constraint query expression "${ecl}"`}];
+      const prompt = [ {role: "user", content: `Explain this SNOMED CT constraint query expression: "${ecl}".`}];
       const completion = await this.openaiService.completion(prompt, 1000, 0.8);
       const response = completion.data.choices[0].message?.content;
       if (response) {

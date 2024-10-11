@@ -10,6 +10,7 @@ export class OpenaiService {
 
   apiKey = '';
   model = 'gpt-4o-mini'; // Original 0301 - gpt-3.5-turbo-0613
+  modelCost = 0.15;
   promptTokensPrice4k35 = 0.0015;
   completionTokensPrice4k35 = 0.002;
   promptTokensPrice16k35 = 0.003;
@@ -59,7 +60,7 @@ export class OpenaiService {
       if (result?.data?.usage) {
         const prompt_tokens = result?.data?.usage?.prompt_tokens;
         const completion_tokens = result?.data?.usage?.completion_tokens;
-        const cost = (prompt_tokens / 1000 * this.promptTokensPrice16k35 + completion_tokens / 1000 * this.completionTokensPrice16k35).toFixed(4);
+        const cost = (prompt_tokens / 1000000 * this.modelCost + completion_tokens / 1000000 * this.modelCost).toFixed(4);
         console.log("API Cost: ", cost, "USD");
       }
       

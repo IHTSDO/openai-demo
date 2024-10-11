@@ -92,7 +92,7 @@ export class TranslationComponent implements OnInit {
     try {
       this.loadingTranslation = true;
       this.translationResult = "";
-      const prompt = [ {role: "user", content: `Translate to ${this.language} this SNOMED CT clinical description "${this.sourceText}"`}];
+      const prompt = [ {role: "user", content: `Translate to ${this.language} this SNOMED CT clinical description, include only the target language term, no intro or commentary: "${this.sourceText}"`}];
       const completion = await this.openaiService.completion(prompt, 500, 0.8);
       const response = completion.data.choices[0].message?.content;
       if (response) {

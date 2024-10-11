@@ -45,6 +45,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.component';
 import { PlaygroundComponent } from './playground/playground.component';
 import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
+import { MarkdownModule } from 'ngx-markdown';
+import { MarkdownPipe } from './pipes/markdown.pipe';
 
 @NgModule({
   declarations: [
@@ -67,7 +69,8 @@ import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
     FhirSummarizeComponent,
     AiWarningDialogComponent,
     PlaygroundComponent,
-    NlpFunctionComponent
+    NlpFunctionComponent,
+    MarkdownPipe
   ],
   imports: [
     BrowserModule,
@@ -95,7 +98,8 @@ import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
     MatSnackBarModule,
     MatRadioModule,
     MatTableModule,
-    MatChipsModule
+    MatChipsModule,
+    MarkdownModule.forRoot(),
   ],
   providers: [],
   bootstrap: [AppComponent]

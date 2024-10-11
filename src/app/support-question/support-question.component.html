@@ -5,9 +5,17 @@
             <mat-label>Support question</mat-label>
             <textarea matInput placeholder="Enter expression..." rows="5" [(ngModel)]="supportQuestion"></textarea>
         </mat-form-field>
+        <mat-form-field class="example-full-width">
+            <mat-label>Response Language</mat-label>
+            <mat-select [(ngModel)]="selectedLanguage">
+                <mat-option *ngFor="let language of languages" [value]="language.code">
+                    {{ language.name }}
+                </mat-option>
+            </mat-select>
+        </mat-form-field>
+
         <div class="result">
             <mat-chip-list>
-                <!-- <mat-icon id="qa">question_answer</mat-icon> -->
                 <mat-chip (click)="askQuestion(item.prompt)" *ngFor="let item of questions">{{item.title}}</mat-chip>
             </mat-chip-list>
         </div>

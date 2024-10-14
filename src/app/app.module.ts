@@ -47,6 +47,7 @@ import { PlaygroundComponent } from './playground/playground.component';
 import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
 import { MarkdownModule } from 'ngx-markdown';
 import { MarkdownPipe } from './pipes/markdown.pipe';
+import { YouTubePlayerModule } from '@angular/youtube-player';
 
 @NgModule({
   declarations: [
@@ -100,6 +101,7 @@ import { MarkdownPipe } from './pipes/markdown.pipe';
     MatTableModule,
     MatChipsModule,
     MarkdownModule.forRoot(),
+    YouTubePlayerModule
   ],
   providers: [],
   bootstrap: [AppComponent]

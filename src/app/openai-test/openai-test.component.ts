@@ -20,6 +20,7 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
   apiKey: string = "";
   apiKeyInInput: string = ""
   apiModel = "";
+  videoId = '-9Ro_Sa_5g8';
 
   constructor(@Inject(LOCAL_STORAGE) private storage: StorageService,
               private cacheService: CacheService, private openaiService: OpenaiService,

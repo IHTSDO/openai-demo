@@ -62,8 +62,8 @@ export class AppComponent {
         this.setEdition(this.editions[0]);
       }
       // Overriding defaults for daily build
-      this.terminologyService.setFhirUrlParam('http://snomed.info/xsct/900000000000207008');
-      this.selectedEdition = "Latest daily build";
+      this.terminologyService.setFhirUrlParam('http://snomed.info/sct/900000000000207008');
+      this.selectedEdition = "Latest available edition";
     });
   }
 

@@ -1,12 +1,12 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { Configuration, OpenAIApi } from 'openai';
 import { TerminologyService } from '../services/terminology.service';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-nlp',
-  templateUrl: './nlp.component.html',
-  styleUrls: ['./nlp.component.css']
+    selector: 'app-nlp',
+    templateUrl: './nlp.component.html',
+    styleUrls: ['./nlp.component.css'],
+    standalone: false
 })
 export class NlpComponent implements OnInit {
   @Input() apiKey: string = "";
@@ -41,11 +41,6 @@ export class NlpComponent implements OnInit {
       this.loadingNlp = true;
       this.nlpResult = "";
       this.entities = [];
-      const configuration = new Configuration({
-        apiKey: this.apiKey
-      });
-      const openai = new OpenAIApi(configuration);
-      
       const systemPrompt = {role: "system", content: `You are a npm entity extractor. Report results as a JSON array of objects. 
       Detect as much entities from the user input as possible. If an entity has a modifiers, such as laterality or severity, 
       detect only the main entity and report the modifier in the corresponding property of the json object.

@@ -1,12 +1,12 @@
 import { Component, Input, OnInit } from '@angular/core';
-import { Configuration, OpenAIApi } from 'openai';
 import { TerminologyService } from '../services/terminology.service';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-nlp-function',
-  templateUrl: './nlp-function.component.html',
-  styleUrls: ['./nlp-function.component.css']
+    selector: 'app-nlp-function',
+    templateUrl: './nlp-function.component.html',
+    styleUrls: ['./nlp-function.component.css'],
+    standalone: false
 })
 export class NlpFunctionComponent implements OnInit {
   @Input() apiKey: string = "";

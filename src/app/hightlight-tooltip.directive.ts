@@ -2,7 +2,8 @@ import { Directive, ElementRef, Input, OnChanges, SimpleChanges } from '@angular
 import { MatTooltip } from '@angular/material/tooltip';
 
 @Directive({
-  selector: '[appHighlightTooltip]'
+    selector: '[appHighlightTooltip]',
+    standalone: false
 })
 export class HighlightTooltipDirective implements OnChanges {
   @Input() entities: any[] = [];

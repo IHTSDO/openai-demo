@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-translation',
-  templateUrl: './translation.component.html',
-  styleUrls: ['./translation.component.css']
+    selector: 'app-translation',
+    templateUrl: './translation.component.html',
+    styleUrls: ['./translation.component.css'],
+    standalone: false
 })
 export class TranslationComponent implements OnInit {
   @Input() apiKey: string = "";

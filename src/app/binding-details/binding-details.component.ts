@@ -3,9 +3,10 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { TerminologyService } from '../services/terminology.service';
 
 @Component({
-  selector: 'app-binding-details',
-  templateUrl: './binding-details.component.html',
-  styleUrls: ['./binding-details.component.css']
+    selector: 'app-binding-details',
+    templateUrl: './binding-details.component.html',
+    styleUrls: ['./binding-details.component.css'],
+    standalone: false
 })
 export class BindingDetailsComponent implements OnInit {
 

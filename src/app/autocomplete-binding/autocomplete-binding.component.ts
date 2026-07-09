@@ -7,9 +7,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { BindingDetailsComponent } from '../binding-details/binding-details.component';
 
 @Component({
-  selector: 'app-autocomplete-binding',
-  templateUrl: './autocomplete-binding.component.html',
-  styleUrls: ['./autocomplete-binding.component.css']
+    selector: 'app-autocomplete-binding',
+    templateUrl: './autocomplete-binding.component.html',
+    styleUrls: ['./autocomplete-binding.component.css'],
+    standalone: false
 })
 export class AutocompleteBindingComponent implements OnInit {
   formControl = new UntypedFormControl();

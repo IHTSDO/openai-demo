@@ -1,9 +1,10 @@
 import { Component, Input, OnInit } from '@angular/core';
 
 @Component({
-  selector: 'app-binding',
-  templateUrl: './binding.component.html',
-  styleUrls: ['./binding.component.css']
+    selector: 'app-binding',
+    templateUrl: './binding.component.html',
+    styleUrls: ['./binding.component.css'],
+    standalone: false
 })
 export class BindingComponent implements OnInit {
 

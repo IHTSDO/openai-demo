@@ -3,9 +3,10 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { CookieService } from 'ngx-cookie-service';
 
 @Component({
-  selector: 'app-ai-warning-dialog',
-  templateUrl: './ai-warning-dialog.component.html',
-  styleUrls: ['./ai-warning-dialog.component.css']
+    selector: 'app-ai-warning-dialog',
+    templateUrl: './ai-warning-dialog.component.html',
+    styleUrls: ['./ai-warning-dialog.component.css'],
+    standalone: false
 })
 export class AiWarningDialogComponent implements OnInit {
 

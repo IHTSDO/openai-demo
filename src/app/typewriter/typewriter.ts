@@ -1,11 +1,12 @@
 import { Component, Input, SimpleChanges } from '@angular/core';
 
 @Component({
-  selector: 'app-typewriter',
-  template: `
+    selector: 'app-typewriter',
+    template: `
     <span [innerHTML]="currentText | markdown"></span>
   `,
-  styleUrls: ['./typewriter.component.css']
+    styleUrls: ['./typewriter.component.css'],
+    standalone: false
 })
 export class TypewriterComponent {
   @Input() message: string = "";

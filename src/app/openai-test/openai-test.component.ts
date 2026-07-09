@@ -1,5 +1,4 @@
 import { Component, OnInit, InjectionToken, Inject, ViewChild, OnChanges, SimpleChanges } from '@angular/core';
-import { Configuration, OpenAIApi } from "openai";
 import { LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 import { CacheService } from '../services/cache.service';
 import { OpenaiService } from '../services/openai.service';
@@ -8,9 +7,10 @@ import { MatDialog } from '@angular/material/dialog';
 import { AiWarningDialogComponent } from '../ai-warning-dialog/ai-warning-dialog.component';
 
 @Component({
-  selector: 'app-openai-test',
-  templateUrl: './openai-test.component.html',
-  styleUrls: ['./openai-test.component.css']
+    selector: 'app-openai-test',
+    templateUrl: './openai-test.component.html',
+    styleUrls: ['./openai-test.component.css'],
+    standalone: false
 })
 export class OpenaiTestComponent implements OnInit, OnChanges {
   @ViewChild('mainTabGroup') tabGroup!: MatTabGroup;

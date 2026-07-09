@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@angular/core';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { LOCAL_STORAGE, StorageService } from 'ngx-webstorage-service';
 import { CacheService } from './cache.service';
 
@@ -36,37 +36,37 @@ export class OpenaiService {
     }
     const cachedData = this.cacheService.getFromCache(params);
     if (cachedData && !this.disableCache) {
-      // return cachedata as a promise
+      // return cacheddata as a promise
       console.log("API Cost: 0 USD (Cached)");
-      return new Promise((resolve, reject) => {
-        resolve(cachedData);
-      });
+      return cachedData;
     } else {
       if (!this.apiKey) {
         this.apiKey = this.storage.get('tempDataSct');
       }
-      const configuration = new Configuration({
-        apiKey: this.apiKey
+      const openai = new OpenAI({
+        apiKey: this.apiKey,
+        dangerouslyAllowBrowser: true
       });
-      const openai = new OpenAIApi(configuration);
-      const result = await openai.createChatCompletion({
+      // `functions` is a deprecated (but still functional) Chat Completions
+      // parameter; cast to `any` so the current SDK typings don't reject it.
+      const response = await openai.chat.completions.create({
         model: this.model,
         messages: messages,
         functions: functions,
         max_tokens: maxTokens,
         temperature: temperature
-      });
+      } as any);
+      // Preserve the `{ data: ... }` response shape the components expect.
+      const result = { data: response };
       this.cacheService.addToCache(params, result);
-      if (result?.data?.usage) {
-        const prompt_tokens = result?.data?.usage?.prompt_tokens;
-        const completion_tokens = result?.data?.usage?.completion_tokens;
+      if (response?.usage) {
+        const prompt_tokens = response.usage.prompt_tokens;
+        const completion_tokens = response.usage.completion_tokens;
         const cost = (prompt_tokens / 1000000 * this.modelCost + completion_tokens / 1000000 * this.modelCost).toFixed(4);
         console.log("API Cost: ", cost, "USD");
       }
-      
-      return new Promise((resolve, reject) => {
-        resolve(result);
-      });
+
+      return result;
     }
   }
 

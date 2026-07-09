@@ -4,9 +4,10 @@ import { ExcelService } from './services/excel.service';
 import { TerminologyService } from './services/terminology.service';
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+    selector: 'app-root',
+    templateUrl: './app.component.html',
+    styleUrls: ['./app.component.css'],
+    standalone: false
 })
 export class AppComponent {
   title = 'ng-coding-demo-template';

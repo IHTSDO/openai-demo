@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-description-generator',
-  templateUrl: './description-generator.component.html',
-  styleUrls: ['./description-generator.component.css']
+    selector: 'app-description-generator',
+    templateUrl: './description-generator.component.html',
+    styleUrls: ['./description-generator.component.css'],
+    standalone: false
 })
 export class DescriptionGeneratorComponent implements OnInit {
 

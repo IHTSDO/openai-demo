@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-ecl-explain',
-  templateUrl: './ecl-explain.component.html',
-  styleUrls: ['./ecl-explain.component.css']
+    selector: 'app-ecl-explain',
+    templateUrl: './ecl-explain.component.html',
+    styleUrls: ['./ecl-explain.component.css'],
+    standalone: false
 })
 export class EclExplainComponent implements OnInit {
   @Input() apiKey: string = "";

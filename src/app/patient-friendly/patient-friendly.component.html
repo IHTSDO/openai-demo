@@ -14,10 +14,10 @@
             <textarea matInput placeholder="Enter text..." rows="5" [(ngModel)]="sourceTextPt"></textarea>
         </mat-form-field>
         <div class="result">
-            <mat-chip-list>
+            <mat-chip-set>
                 <!-- <mat-icon id="qa">question_answer</mat-icon> -->
                 <mat-chip (click)="run(item)" *ngFor="let item of terms">{{item}}</mat-chip>
-            </mat-chip-list>
+            </mat-chip-set>
         </div>
         <br><br>
         <h2><app-typewriter [message]="ptResult"></app-typewriter></h2>

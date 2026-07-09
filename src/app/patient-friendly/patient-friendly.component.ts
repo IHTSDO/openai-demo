@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-patient-friendly',
-  templateUrl: './patient-friendly.component.html',
-  styleUrls: ['./patient-friendly.component.css']
+    selector: 'app-patient-friendly',
+    templateUrl: './patient-friendly.component.html',
+    styleUrls: ['./patient-friendly.component.css'],
+    standalone: false
 })
 export class PatientFriendlyComponent implements OnInit {
   @Input() apiKey: string = "";

@@ -3,9 +3,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { TerminologyService } from '../services/terminology.service';
 
 @Component({
-  selector: 'app-single-coding',
-  templateUrl: './single-coding.component.html',
-  styleUrls: ['./single-coding.component.css']
+    selector: 'app-single-coding',
+    templateUrl: './single-coding.component.html',
+    styleUrls: ['./single-coding.component.css'],
+    standalone: false
 })
 export class SingleCodingComponent implements OnInit {
 
@@ -119,14 +120,15 @@ export class SingleCodingComponent implements OnInit {
 }
 
 @Component({
-  selector: 'snack-bar-component-example-snack',
-  templateUrl: './not-implemented-alert.html',
-  styles: [
-    `
+    selector: 'snack-bar-component-example-snack',
+    templateUrl: './not-implemented-alert.html',
+    styles: [
+        `
     .example-alert {
       color: hotpink;
     }
   `,
-  ],
+    ],
+    standalone: false
 })
 export class NotImplementedAlertComponent {}

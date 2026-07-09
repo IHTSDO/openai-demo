@@ -4,9 +4,10 @@ import { BindingDetailsComponent } from '../binding-details/binding-details.comp
 import { TerminologyService } from '../services/terminology.service';
 
 @Component({
-  selector: 'app-dropdown-binding',
-  templateUrl: './dropdown-binding.component.html',
-  styleUrls: ['./dropdown-binding.component.css']
+    selector: 'app-dropdown-binding',
+    templateUrl: './dropdown-binding.component.html',
+    styleUrls: ['./dropdown-binding.component.css'],
+    standalone: false
 })
 export class DropdownBindingComponent implements OnInit {
   @Input() binding: any;

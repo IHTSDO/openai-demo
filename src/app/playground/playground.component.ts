@@ -3,9 +3,10 @@ import { OpenaiService } from '../services/openai.service';
 import { TerminologyService } from '../services/terminology.service';
 
 @Component({
-  selector: 'app-playground',
-  templateUrl: './playground.component.html',
-  styleUrls: ['./playground.component.css']
+    selector: 'app-playground',
+    templateUrl: './playground.component.html',
+    styleUrls: ['./playground.component.css'],
+    standalone: false
 })
 export class PlaygroundComponent {
 

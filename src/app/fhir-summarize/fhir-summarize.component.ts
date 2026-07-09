@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-fhir-summarize',
-  templateUrl: './fhir-summarize.component.html',
-  styleUrls: ['./fhir-summarize.component.css']
+    selector: 'app-fhir-summarize',
+    templateUrl: './fhir-summarize.component.html',
+    styleUrls: ['./fhir-summarize.component.css'],
+    standalone: false
 })
 export class FhirSummarizeComponent implements OnInit {
   @Input() apiKey: string = "";

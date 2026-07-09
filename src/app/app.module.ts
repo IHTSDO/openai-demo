@@ -14,7 +14,7 @@ import { MatGridListModule } from '@angular/material/grid-list';
 import { AutocompleteBindingComponent } from './autocomplete-binding/autocomplete-binding.component';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
-import { HttpClientModule } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatInputModule } from '@angular/material/input';
@@ -49,61 +49,54 @@ import { MarkdownModule } from 'ngx-markdown';
 import { MarkdownPipe } from './pipes/markdown.pipe';
 import { YouTubePlayerModule } from '@angular/youtube-player';
 
-@NgModule({
-  declarations: [
-    AppComponent,
-    CodingTabsComponent,
-    BindingComponent,
-    AutocompleteBindingComponent,
-    BindingDetailsComponent,
-    DropdownBindingComponent,
-    SingleCodingComponent,
-    OpenaiTestComponent,
-    TypewriterComponent,
-    NlpComponent,
-    HighlightTooltipDirective,
-    DescriptionGeneratorComponent,
-    TranslationComponent,
-    PatientFriendlyComponent,
-    EclExplainComponent,
-    SupportQuestionComponent,
-    FhirSummarizeComponent,
-    AiWarningDialogComponent,
-    PlaygroundComponent,
-    NlpFunctionComponent,
-    MarkdownPipe
-  ],
-  imports: [
-    BrowserModule,
-    AppRoutingModule,
-    BrowserAnimationsModule,
-    MatToolbarModule,
-    MatIconModule,
-    MatButtonModule,
-    MatTabsModule,
-    MatGridListModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    HttpClientModule,
-    MatAutocompleteModule,
-    FormsModule,
-    ReactiveFormsModule,
-    MatInputModule,
-    MatProgressSpinnerModule,
-    MatDialogModule,
-    MatListModule,
-    ClipboardModule,
-    MatMenuModule,
-    MatTooltipModule,
-    MatCardModule,
-    MatSnackBarModule,
-    MatRadioModule,
-    MatTableModule,
-    MatChipsModule,
-    MarkdownModule.forRoot(),
-    YouTubePlayerModule
-  ],
-  providers: [],
-  bootstrap: [AppComponent]
-})
+@NgModule({ declarations: [
+        AppComponent,
+        CodingTabsComponent,
+        BindingComponent,
+        AutocompleteBindingComponent,
+        BindingDetailsComponent,
+        DropdownBindingComponent,
+        SingleCodingComponent,
+        OpenaiTestComponent,
+        TypewriterComponent,
+        NlpComponent,
+        HighlightTooltipDirective,
+        DescriptionGeneratorComponent,
+        TranslationComponent,
+        PatientFriendlyComponent,
+        EclExplainComponent,
+        SupportQuestionComponent,
+        FhirSummarizeComponent,
+        AiWarningDialogComponent,
+        PlaygroundComponent,
+        NlpFunctionComponent,
+        MarkdownPipe
+    ],
+    bootstrap: [AppComponent], imports: [BrowserModule,
+        AppRoutingModule,
+        BrowserAnimationsModule,
+        MatToolbarModule,
+        MatIconModule,
+        MatButtonModule,
+        MatTabsModule,
+        MatGridListModule,
+        MatFormFieldModule,
+        MatSelectModule,
+        MatAutocompleteModule,
+        FormsModule,
+        ReactiveFormsModule,
+        MatInputModule,
+        MatProgressSpinnerModule,
+        MatDialogModule,
+        MatListModule,
+        ClipboardModule,
+        MatMenuModule,
+        MatTooltipModule,
+        MatCardModule,
+        MatSnackBarModule,
+        MatRadioModule,
+        MatTableModule,
+        MatChipsModule,
+        MarkdownModule.forRoot(),
+        YouTubePlayerModule], providers: [provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule { }

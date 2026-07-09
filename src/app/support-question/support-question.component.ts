@@ -2,9 +2,10 @@ import { Component, Input, OnInit } from '@angular/core';
 import { OpenaiService } from '../services/openai.service';
 
 @Component({
-  selector: 'app-support-question',
-  templateUrl: './support-question.component.html',
-  styleUrls: ['./support-question.component.css']
+    selector: 'app-support-question',
+    templateUrl: './support-question.component.html',
+    styleUrls: ['./support-question.component.css'],
+    standalone: false
 })
 export class SupportQuestionComponent implements OnInit {
   @Input() apiKey: string = "";

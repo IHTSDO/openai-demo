@@ -2,9 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { CodingSpecService } from '../services/coding-spec.service';
 
 @Component({
-  selector: 'app-coding-tabs',
-  templateUrl: './coding-tabs.component.html',
-  styleUrls: ['./coding-tabs.component.css']
+    selector: 'app-coding-tabs',
+    templateUrl: './coding-tabs.component.html',
+    styleUrls: ['./coding-tabs.component.css'],
+    standalone: false
 })
 export class CodingTabsComponent implements OnInit {
 

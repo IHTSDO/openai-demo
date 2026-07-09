@@ -31,7 +31,6 @@ import { MatCardModule } from '@angular/material/card';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { OpenaiTestComponent } from './openai-test/openai-test.component';
 import { TypewriterComponent } from './typewriter/typewriter';
-import { NlpComponent } from './nlp/nlp.component';
 import { HighlightTooltipDirective } from './hightlight-tooltip.directive';
 import { DescriptionGeneratorComponent } from './description-generator/description-generator.component';
 import { MatRadioModule } from '@angular/material/radio';
@@ -43,7 +42,6 @@ import { SupportQuestionComponent } from './support-question/support-question.co
 import { FhirSummarizeComponent } from './fhir-summarize/fhir-summarize.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.component';
-import { PlaygroundComponent } from './playground/playground.component';
 import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
 import { MarkdownModule } from 'ngx-markdown';
 import { MarkdownPipe } from './pipes/markdown.pipe';
@@ -59,7 +57,6 @@ import { YouTubePlayerModule } from '@angular/youtube-player';
         SingleCodingComponent,
         OpenaiTestComponent,
         TypewriterComponent,
-        NlpComponent,
         HighlightTooltipDirective,
         DescriptionGeneratorComponent,
         TranslationComponent,
@@ -68,7 +65,6 @@ import { YouTubePlayerModule } from '@angular/youtube-player';
         SupportQuestionComponent,
         FhirSummarizeComponent,
         AiWarningDialogComponent,
-        PlaygroundComponent,
         NlpFunctionComponent,
         MarkdownPipe
     ],

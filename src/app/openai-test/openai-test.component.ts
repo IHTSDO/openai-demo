@@ -19,7 +19,7 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
   storageKey = "tempDataSct";
   apiKey: string = "";
   apiKeyInInput: string = ""
-  apiModel = "";
+  model = "";
   videoId = '-9Ro_Sa_5g8';
 
   constructor(@Inject(LOCAL_STORAGE) private storage: StorageService,
@@ -27,7 +27,7 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
               public dialog: MatDialog) { }
 
   ngOnInit(): void {
-    this.apiModel = this.openaiService.getModel();
+    this.model = this.openaiService.getModel();
     this.apiKey = this.storage.get(this.storageKey)
     // runb this check aftwe 1 second to allow the tab group to be initialized
     setTimeout(() => {
@@ -61,11 +61,6 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
 
   getFromLocalStorage(key: string) {
     return this.storage.get(key);
-  }
-
-  onApiModelChange(newModel: string) {
-    // Add logic here to handle the change in apiModel
-    this.openaiService.setModel(newModel);
   }
 
 }

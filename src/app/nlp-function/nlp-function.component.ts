@@ -36,70 +36,47 @@ export class NlpFunctionComponent implements OnInit {
   }
 
   async runNlp(): Promise<void> {
+    const startTime = performance.now();
     try {
-    this.status = 'Extracting clinical entities...';
+    this.status = 'Phase 1/3 · Extracting clinical entities from text…';
     this.loadingNlp = true;
     this.nlpResult = "";
     this.entities = [];
     const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes.`};
-    const functions = [
-      {
-        "name": "getSNOMEDCodes",
-        "description": "Use this function to pass a list of clinical terms and get back SNOMED CT codes.",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "terms": {
-              "type": "array",
-              "items": {
-                "type": "object",
-                "properties": {
-                  "text": {
-                    "type": "string",
-                    "description": "The clinical term extracted from the text"
-                  },
-                  "type": {
-                    "type": "string",
-                    "enum": ["finding", "procedure", "medication", "morphology", "body structure"],
-                    "description": "The type of clinical term"
-                  },
-                  "context": {
-                    "type": "string",
-                    "enum": ["present", "absent", "unknown"],
-                    "description": "The context of the term, wether is present, absent or unknown"
-                  },
-                  "fsn": {
-                    "type": "string",
-                    "description": "The fully specified name of the term. Spell out acronyms."
-                  },
-                  "severity": {
-                    "type": "string",
-                    "description": "The severity contained in the term, if any",
-                    "enum": ["mild", "moderate", "severe"]
-                  },
-                  "laterality": {
-                    "type": "string",
-                    "description": "The laterality contained in the term, if any",
-                    "enum": ["left", "right", "bilateral"]
-                  },
-                  "singularFsn": {
-                    "type": "string",
-                    "description": "The fsn, removing plurals"
-                  }
-                },
-                "required": ["text", "type", "context", "singularFsn"]
-              }
+    // Strict JSON schema for Structured Outputs. In strict mode every property
+    // must be listed in `required` and objects need additionalProperties:false;
+    // optional fields (severity/laterality) are modelled as nullable unions.
+    const schema = {
+      name: "clinical_entities",
+      schema: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          terms: {
+            type: "array",
+            description: "List of clinical terms extracted from the text.",
+            items: {
+              type: "object",
+              additionalProperties: false,
+              properties: {
+                text: { type: "string", description: "The clinical term extracted from the text" },
+                type: { type: "string", enum: ["finding", "procedure", "medication", "morphology", "body structure"], description: "The type of clinical term" },
+                context: { type: "string", enum: ["present", "absent", "unknown"], description: "Whether the term is present, absent or unknown" },
+                fsn: { type: "string", description: "The fully specified name of the term. Spell out acronyms." },
+                singularFsn: { type: "string", description: "The fsn, removing plurals" },
+                severity: { type: ["string", "null"], enum: ["mild", "moderate", "severe", null], description: "The severity contained in the term, or null if none" },
+                laterality: { type: ["string", "null"], enum: ["left", "right", "bilateral", null], description: "The laterality contained in the term, or null if none" }
+              },
+              required: ["text", "type", "context", "fsn", "singularFsn", "severity", "laterality"]
             }
           }
         },
+        required: ["terms"]
       }
-    ]
+    };
     const message = `Extract clinical terms and assign SNOMED CT codes to this text: ${this.clinicalText}\n`;
-    const completion = await this.openaiService.completion([systemPrompt, {role: "user", content: message}], 10000, 0, functions);
-    const response = completion.data.choices[0].message?.function_call;
-    const functionName = response?.name;
-    const functionArguments = JSON.parse(response?.arguments);
-    this.entities = functionArguments?.terms;
+    const completion = await this.openaiService.extract([systemPrompt, {role: "user", content: message}], schema, { maxCompletionTokens: 10000 });
+    this.entities = completion.parsed?.terms ?? [];
     this.entities.forEach((entity: any) => {
       if (entity.type == "finding") {
         entity.type = "F";
@@ -117,17 +94,18 @@ export class NlpFunctionComponent implements OnInit {
       // remove laterality and severity from singularFsn and trim
       entity.singularFsn = entity.singularFsn.replace(/(left|right|bilateral|severe|moderate|mild)/gi, '').trim();
     });
+    this.status = `Phase 2/3 · Found ${this.entities.length} entities — matching with SNOMED CT…`;
     await this.matchWithSnomed(this.entities);
-    const modelCost = 0.15;
+    // Phase 3: post-process the matched entities.
+    this.status = 'Phase 3/3 · Finalizing results…';
     // remove entities with no snomed code
     this.entities = this.entities.filter((entity: any) => entity.snomed?.code?.length);
     // remove duplicates with same text
     this.entities = this.entities.filter((entity: any, index: number, self: any[]) => self.findIndex((e: any) => e.text === entity.text) === index);
-    const prompt_tokens = completion?.data?.usage?.prompt_tokens;
-    const completion_tokens = completion?.data?.usage?.completion_tokens;
-    const cost = (prompt_tokens / 1000000 * modelCost + completion_tokens / 1000000 * modelCost).toFixed(4);
     this.nlpResult = JSON.stringify(this.entities, null, 2);
-    this.status = `Extracted ${this.entities.length} clinical entities. Cost: $${cost}`;
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+    const costPart = completion.cached ? 'Using AI cache · $0.00' : `Cost: $${completion.cost}`;
+    this.status = `Done in ${elapsed}s · Extracted ${this.entities.length} clinical entities · ${costPart}`;
     // const functionPrompt = {role: "function", name: functionName, content: JSON.stringify(this.entities)};
     // const completion2 = await this.openaiService.completion(
     //   [
@@ -151,11 +129,10 @@ export class NlpFunctionComponent implements OnInit {
   
   async matchWithSnomed(entities: any[]) {
     let count = 0;
-    let baseStatus = this.status;
     await this.asyncForEach(entities, async (entity: any) => {
       count++;
       entity.singularFsn = this.removeSemtag(entity.singularFsn);
-      this.status = baseStatus + ' (' + count + ' of ' + entities.length + ')...';
+      this.status = `Phase 2/3 · Matching with SNOMED CT (${count} of ${entities.length})…`;
       let response = await this.terminologyService.matchText(entity.singularFsn, entity.type).toPromise();
       if (response?.expansion?.contains?.length > 0) {
         const distance = this.levenshteinDistance(entity.singularFsn, this.removeSemtag(response.expansion.contains[0].display));
@@ -203,7 +180,6 @@ export class NlpFunctionComponent implements OnInit {
         entity.snomed = {expression: "No match found"};
       }
     });
-    this.status = `Found ${this.entities.length} clinical entities.`;
   }
 
   removeSemtag(text: string): string {

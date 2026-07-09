@@ -43,19 +43,27 @@ export class OpenaiService {
       if (!this.apiKey) {
         this.apiKey = this.storage.get('tempDataSct');
       }
+      if (!this.apiKey) {
+        throw new Error('No OpenAI API key configured. Add your key in the "OpenAI API" tab.');
+      }
       const openai = new OpenAI({
         apiKey: this.apiKey,
         dangerouslyAllowBrowser: true
       });
-      // `functions` is a deprecated (but still functional) Chat Completions
-      // parameter; cast to `any` so the current SDK typings don't reject it.
-      const response = await openai.chat.completions.create({
-        model: this.model,
-        messages: messages,
-        functions: functions,
-        max_tokens: maxTokens,
-        temperature: temperature
-      } as any);
+      let response;
+      try {
+        // `functions` is a deprecated (but still functional) Chat Completions
+        // parameter; cast to `any` so the current SDK typings don't reject it.
+        response = await openai.chat.completions.create({
+          model: this.model,
+          messages: messages,
+          functions: functions,
+          max_tokens: maxTokens,
+          temperature: temperature
+        } as any);
+      } catch (err: any) {
+        throw new Error(this.describeOpenAiError(err));
+      }
       // Preserve the `{ data: ... }` response shape the components expect.
       const result = { data: response };
       this.cacheService.addToCache(params, result);
@@ -68,6 +76,33 @@ export class OpenaiService {
 
       return result;
     }
+  }
+
+  /**
+   * Turn an OpenAI SDK error into a short, user-friendly message.
+   * Distinguishes connection/network failures from HTTP status errors
+   * (auth, rate limit, etc.) so the UI can show something actionable
+   * instead of leaving a spinner running forever.
+   */
+  private describeOpenAiError(err: any): string {
+    const status = err?.status;
+    const name = err?.name;
+    if (status === 401) {
+      return 'OpenAI rejected the API key (401). Check the key in the "OpenAI API" tab.';
+    }
+    if (status === 429) {
+      return 'OpenAI rate limit or quota exceeded (429). Try again later or check your plan.';
+    }
+    if (status === 404) {
+      return `OpenAI could not find model "${this.model}" (404). Check the model id in the "OpenAI API" tab.`;
+    }
+    if (status && status >= 500) {
+      return `OpenAI service error (${status}). Try again in a moment.`;
+    }
+    if (name === 'APIConnectionError' || name === 'APIConnectionTimeoutError' || !status) {
+      return 'Could not reach OpenAI (connection error). Check your network and that requests to api.openai.com are not blocked.';
+    }
+    return err?.message ? `OpenAI error: ${err.message}` : 'Unexpected OpenAI error.';
   }
 
   getFromLocalStorage(key: string) {

@@ -35,9 +35,9 @@ export class EclExplainComponent implements OnInit {
         this.explainResult = response.replace(/\"/g, '');
       }
       this.loadingExplain = false;
-    } catch(err) {
+    } catch(err: any) {
       this.loadingExplain = false;
-      this.explainResult = "Error";
+      this.explainResult = "Error: " + (err?.message || "Explanation failed.");
     }
   }
 

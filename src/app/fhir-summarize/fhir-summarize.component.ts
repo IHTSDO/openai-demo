@@ -128,9 +128,9 @@ export class FhirSummarizeComponent implements OnInit {
         this.fhirSummaryResult = response.replace(/\"/g, '');
       }
       this.loadingFhirSummary = false;
-    } catch(err) {
+    } catch(err: any) {
       this.loadingFhirSummary = false;
-      this.fhirSummaryResult = "Error";
+      this.fhirSummaryResult = "Error: " + (err?.message || "Summarization failed.");
     }
   }
 

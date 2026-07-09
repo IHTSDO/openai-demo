@@ -47,9 +47,9 @@ export class DescriptionGeneratorComponent implements OnInit {
         }
       }
       this.loadingPce = false;
-    } catch(err) {
+    } catch(err: any) {
       this.loadingPce = false;
-      this.result = "Error";
+      this.result = "Error: " + (err?.message || "Generation failed.");
     }
   }
 

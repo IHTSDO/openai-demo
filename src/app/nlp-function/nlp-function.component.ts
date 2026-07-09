@@ -36,6 +36,7 @@ export class NlpFunctionComponent implements OnInit {
   }
 
   async runNlp(): Promise<void> {
+    try {
     this.status = 'Extracting clinical entities...';
     this.loadingNlp = true;
     this.nlpResult = "";
@@ -130,12 +131,16 @@ export class NlpFunctionComponent implements OnInit {
     // const functionPrompt = {role: "function", name: functionName, content: JSON.stringify(this.entities)};
     // const completion2 = await this.openaiService.completion(
     //   [
-    //     systemPrompt, 
-    //     {role: "user", content: message}, 
+    //     systemPrompt,
+    //     {role: "user", content: message},
     //     completion.data.choices[0].message,
     //     functionPrompt], 1000, 0);
     // console.log(completion2);
-    this.loadingNlp = false;
+    } catch (err: any) {
+      this.status = 'Error: ' + (err?.message || 'Could not extract entities.');
+    } finally {
+      this.loadingNlp = false;
+    }
   }
 
   async asyncForEach(array: any[], callback: any) {

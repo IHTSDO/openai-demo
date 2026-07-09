@@ -103,9 +103,9 @@ export class TranslationComponent implements OnInit {
         }
       }
       this.loadingTranslation = false;
-    } catch(err) {
+    } catch(err: any) {
       this.loadingTranslation = false;
-      this.translationResult = "Error";
+      this.translationResult = "Error: " + (err?.message || "Translation failed.");
     }
   }
 

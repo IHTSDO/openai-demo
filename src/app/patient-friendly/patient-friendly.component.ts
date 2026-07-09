@@ -109,9 +109,9 @@ export class PatientFriendlyComponent implements OnInit {
         }
       }
       this.loadingPt = false;
-    } catch(err) {
+    } catch(err: any) {
       this.loadingPt = false;
-      this.ptResult = "Error";
+      this.ptResult = "Error: " + (err?.message || "Generation failed.");
     }
   }
 

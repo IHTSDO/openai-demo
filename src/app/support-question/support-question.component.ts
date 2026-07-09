@@ -103,9 +103,9 @@ export class SupportQuestionComponent implements OnInit {
       }
       this.loadingSupportResponse = false;
 
-    } catch (err) {
+    } catch (err: any) {
       this.loadingSupportResponse = false;
-      this.supportResult = "Error generating response.";
+      this.supportResult = "Error: " + (err?.message || "Could not generate response.");
     }
   }
 }

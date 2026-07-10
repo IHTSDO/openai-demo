@@ -25,6 +25,22 @@ export class EntityTraceDialogComponent {
     this.trace = this.entity?.trace ?? { term: this.entity?.text ?? '', matched: false, steps: [] };
   }
 
+  /** Which system produced a step, for the coloured source pill. */
+  source(stage: string): { label: string; cls: string } {
+    switch (stage) {
+      case 'extract':
+      case 'synonym':                 // clinical/general term come from the LLM extraction
+        return { label: 'LLM', cls: 'src-llm' };
+      case 'search':
+        return { label: 'Snowstorm', cls: 'src-snowstorm' };
+      case 'normalize':
+      case 'score':
+        return { label: 'Local', cls: 'src-local' };
+      default:
+        return { label: 'Result', cls: 'src-result' };
+    }
+  }
+
   iconFor(status: string): string {
     switch (status) {
       case 'ok': return 'check_circle';

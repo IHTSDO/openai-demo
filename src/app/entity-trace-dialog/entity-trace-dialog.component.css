@@ -34,12 +34,33 @@
   min-width: 0;
 }
 
+.stage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .stage {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: #9a9a9a;
 }
+
+/* Source pill: which system produced this step (LLM vs terminology server). */
+.src-pill {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 1px 7px;
+  border-radius: 9px;
+  white-space: nowrap;
+}
+.src-llm { background: #ede7f6; color: #5e35b1; }        /* purple = LLM */
+.src-snowstorm { background: #e0f2f1; color: #00796b; }  /* teal = Snowstorm */
+.src-local { background: #eceff1; color: #546e7a; }      /* grey = deterministic/local */
+.src-result { background: #e8eaf6; color: #3949ab; }     /* indigo = final result */
 
 .title {
   font-weight: 600;

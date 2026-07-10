@@ -13,7 +13,10 @@
         <div class="line" *ngIf="!last"></div>
       </div>
       <div class="body">
-        <div class="stage">{{ step.stage }}</div>
+        <div class="stage-row">
+          <span class="stage">{{ step.stage }}</span>
+          <span class="src-pill" [ngClass]="source(step.stage).cls">{{ source(step.stage).label }}</span>
+        </div>
         <div class="title">{{ step.title }}</div>
         <div class="detail">{{ step.detail }}</div>
 

@@ -54,7 +54,7 @@ export class NlpFunctionComponent implements OnInit {
     this.loadingNlp = true;
     this.nlpResult = "";
     this.entities = [];
-    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass").`};
+    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever".`};
     // Strict JSON schema for Structured Outputs. In strict mode every property
     // must be listed in `required` and objects need additionalProperties:false;
     // optional fields (severity/laterality) are modelled as nullable unions.
@@ -76,7 +76,7 @@ export class NlpFunctionComponent implements OnInit {
                 context: { type: "string", enum: ["present", "absent", "unknown"], description: "Whether the term is present, absent or unknown" },
                 fsn: { type: "string", description: "The fully specified name of the term. Spell out acronyms." },
                 singularFsn: { type: "string", description: "The fsn, removing plurals" },
-                clinicalTerm: { type: "string", description: "The standard clinical term used in SNOMED CT for this concept, mapping lay/descriptive phrasing to formal terminology and correcting spelling (e.g. 'low platelet count' -> 'thrombocytopenia', 'high blood pressure' -> 'hypertension'). If the text is already a standard clinical term, repeat it unchanged." },
+                clinicalTerm: { type: "string", description: "The standard clinical term used in SNOMED CT for this concept, mapping lay/descriptive phrasing to formal terminology and correcting spelling (e.g. 'low platelet count' -> 'thrombocytopenia', 'high blood pressure' -> 'hypertension'). ALWAYS give the POSITIVE concept even when the text is negated — the negation is captured separately in context (e.g. 'no fever' -> 'fever', 'denies chest pain' -> 'chest pain'). If the text is already a standard positive clinical term, repeat it unchanged." },
                 generalTerm: { type: "string", description: "A broader, more general clinical term for this concept, dropping specific anatomical or other qualifiers so it can still match when the specific phrasing is absent from the terminology (e.g. 'bilateral pelvic masses' -> 'mass', 'left frontal headache' -> 'headache'). Use the clinical/standard wording." },
                 severity: { type: ["string", "null"], enum: ["mild", "moderate", "severe", null], description: "The severity contained in the term, or null if none" },
                 laterality: { type: ["string", "null"], enum: ["left", "right", "bilateral", null], description: "The laterality contained in the term, or null if none" }
@@ -205,15 +205,20 @@ export class NlpFunctionComponent implements OnInit {
       const searchStatus = (cands: TraceCandidate[], accepted: boolean) =>
         accepted ? 'ok' : (cands.length ? 'warn' : 'fail');
 
-      // Pass 1 — LITERAL search with the raw extracted text (highest precision).
-      let queryTerm = entity.text;
+      // Pass 1 — LITERAL search. When the mention is negated (context=absent)
+      // we search the POSITIVE term with the negation stripped ("no fever" ->
+      // "fever"); the negation is preserved via context and encoded in the CTUF
+      // below (Known absent). The demo only needs to find the positive code.
+      const negated = entity.context === 'absent';
+      const baseTerm = negated ? this.stripNegation(entity.text) : entity.text;
+      let queryTerm = baseTerm;
       let candidates = await this.searchCandidates(queryTerm, entity.type);
       let accepted = consider(candidates);
       entity.trace.steps.push({
         stage: 'search',
         status: searchStatus(candidates, accepted),
         title: 'Literal search',
-        detail: `${label} · literal "${queryTerm}" → ${candidates.length} candidate(s)`,
+        detail: `${label} · literal "${queryTerm}"${baseTerm !== entity.text ? ` (negation stripped from "${entity.text}")` : ''} → ${candidates.length} candidate(s)`,
         data: { ecl, queryTerm, candidates }
       });
 
@@ -221,14 +226,14 @@ export class NlpFunctionComponent implements OnInit {
       // parenthetical qualifiers/semantic tags, then search. Skipped when
       // there is nothing to strip.
       if (!entity.snomed) {
-        const normalized = this.normalizeTerm(entity.text);
-        const changed = normalized !== entity.text;
+        const normalized = this.normalizeTerm(baseTerm);
+        const changed = normalized !== baseTerm;
         entity.trace.steps.push({
           stage: 'normalize',
           status: changed ? 'ok' : 'warn',
           title: changed ? 'Normalized (stripped modifiers)' : 'Nothing to strip',
-          detail: changed ? `"${entity.text}" → "${normalized}"` : `no modifiers to remove from "${entity.text}"`,
-          data: { from: entity.text, to: normalized }
+          detail: changed ? `"${baseTerm}" → "${normalized}"` : `no modifiers to remove from "${baseTerm}"`,
+          data: { from: baseTerm, to: normalized }
         });
         if (changed) {
           queryTerm = normalized;
@@ -424,6 +429,20 @@ export class NlpFunctionComponent implements OnInit {
     const set = new Set(this.tokenize(display));
     const matched = queryTokens.filter(t => set.has(t)).length;
     return matched / queryTokens.length;
+  }
+
+  /**
+   * Remove negation cues so a negated mention is searched as its positive
+   * concept (e.g. "no fever" -> "fever", "denies chest pain" -> "chest pain").
+   * The fact that it was negated is carried separately in the entity context.
+   * Longer phrases are listed first so they match before the bare "no"/"not".
+   */
+  private stripNegation(text: string): string {
+    const t = (text || '')
+      .replace(/\b(no evidence of|no history of|no signs of|negative for|absence of|without|denies|denied|ruled out|free of|absent|no|not)\b/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return t || text;
   }
 
   /**

@@ -51,28 +51,34 @@ export class TerminologyService {
       );
   }
 
-  matchText(text: string, type: string): Observable<any> {
+  /**
+   * Maps an entity type code to the ECL hierarchy it is searched within, plus
+   * a human-readable label for tracing/visualization. Kept here (not in the
+   * component) so the query and its description never drift apart.
+   */
+  eclForType(type: string): { ecl: string; label: string } {
+    switch (type) {
+      case 'F':  return { ecl: `<< 404684003 |Clinical finding|`, label: 'Clinical finding' };
+      case 'P':  return { ecl: `<< 71388002 |Procedure|`, label: 'Procedure' };
+      case 'M':  return { ecl: `<< 373873005 |Pharmaceutical / biologic product (product)|`, label: 'Pharmaceutical / biologic product' };
+      // A found morphology is searched as a clinical finding.
+      case 'Mo': return { ecl: `<< 404684003 |Clinical finding|`, label: 'Clinical finding (morphology → finding)' };
+      case 'B':  return { ecl: `<< 123037004 |Body structure (body structure)|`, label: 'Body structure' };
+      default:   return { ecl: '', label: `(unknown type "${type}")` };
+    }
+  }
+
+  matchText(text: string, type: string, count: number = 5): Observable<any> {
     if (text.length < 3) {
       return of([]);
-    } else {
-      let ecl = '';
-      if (type == 'F') {
-        ecl = `<< 404684003 |Clinical finding|`;
-      } else if (type == 'P') {
-        ecl = `<< 71388002 |Procedure|`;
-      } else if (type == 'M') {
-        ecl = `<< 373873005 |Pharmaceutical / biologic product (product)|`;
-      } else if (type == 'Mo') {
-        // treat found morphology as a clinical finding
-        ecl = `<< 404684003 |Clinical finding|`;
-        // ecl = `<< 123037004 |Body structure (body structure)|`;
-      } else if (type == 'B') {
-        ecl = `<< 123037004 |Body structure (body structure)|`;
-      }
-      return this.expandValueSet(ecl, text, 0, 1).pipe(
-        catchError(this.handleError<any>('expandValueSet', {}))
-      );
     }
+    const { ecl } = this.eclForType(type);
+    if (!ecl) {
+      return of([]);
+    }
+    return this.expandValueSet(ecl, text, 0, count).pipe(
+      catchError(this.handleError<any>('expandValueSet', {}))
+    );
   }
 
   private handleError<T>(operation = 'operation', result?: T) {

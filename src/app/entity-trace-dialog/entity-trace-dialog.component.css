@@ -1,0 +1,96 @@
+.flow {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px;
+  min-width: 440px;
+}
+
+.step {
+  display: flex;
+  gap: 12px;
+}
+
+.marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.marker mat-icon {
+  flex-shrink: 0;
+}
+
+.marker .line {
+  flex: 1;
+  width: 2px;
+  background: #d5d5d5;
+  margin: 2px 0;
+  min-height: 16px;
+}
+
+.body {
+  padding-bottom: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.stage {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #9a9a9a;
+}
+
+.title {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.detail {
+  color: #555;
+  font-size: 13px;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+}
+
+/* Status colours applied to the step's mat-icon */
+.status-ok mat-icon { color: #2e7d32; }
+.status-warn mat-icon { color: #ef6c00; }
+.status-fail mat-icon { color: #c62828; }
+
+.badge {
+  font-size: 12px;
+  padding: 2px 9px;
+  border-radius: 11px;
+  margin-left: 8px;
+  vertical-align: middle;
+  font-weight: 600;
+}
+.badge.ok { background: #c8e6c9; color: #1b5e20; }
+.badge.fail { background: #ffcdd2; color: #b71c1c; }
+
+.candidates {
+  border-collapse: collapse;
+  margin-top: 8px;
+  font-size: 12px;
+  width: 100%;
+}
+.candidates th,
+.candidates td {
+  border: 1px solid #e4e4e4;
+  padding: 3px 6px;
+  text-align: left;
+}
+.candidates th { background: #f5f5f5; }
+.candidates tr.chosen { background: #e8f5e9; font-weight: 600; }
+
+.ecl {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #777;
+}
+.ecl code {
+  background: #f5f5f5;
+  padding: 1px 4px;
+  border-radius: 3px;
+}

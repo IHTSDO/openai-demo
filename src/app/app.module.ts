@@ -43,6 +43,7 @@ import { FhirSummarizeComponent } from './fhir-summarize/fhir-summarize.componen
 import { MatChipsModule } from '@angular/material/chips';
 import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.component';
 import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
+import { EntityTraceDialogComponent } from './entity-trace-dialog/entity-trace-dialog.component';
 import { MarkdownModule } from 'ngx-markdown';
 import { MarkdownPipe } from './pipes/markdown.pipe';
 import { YouTubePlayerModule } from '@angular/youtube-player';
@@ -66,6 +67,7 @@ import { YouTubePlayerModule } from '@angular/youtube-player';
         FhirSummarizeComponent,
         AiWarningDialogComponent,
         NlpFunctionComponent,
+        EntityTraceDialogComponent,
         MarkdownPipe
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,

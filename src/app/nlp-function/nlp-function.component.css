@@ -35,6 +35,11 @@
 }
 
 
+/* Entities detected by the LLM but not resolved on the terminology server. */
+.no-match-row td {
+  background-color: #fdecea;
+}
+
 .mat-column-snomed {
   word-wrap: break-word !important;
   white-space: unset !important;

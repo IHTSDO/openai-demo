@@ -87,3 +87,13 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
 .absent {
     border: 2px solid red;
 }
+
+/* Detected by the LLM but not resolved on the terminology server: discreet
+   dotted outline, no fill, so it reads as "found but unmatched". */
+.no-match {
+    background-color: transparent !important;
+    color: #777 !important;
+    border: 1px dotted #999 !important;
+    border-radius: 20px;
+    padding: 0.2em 0.5em;
+}

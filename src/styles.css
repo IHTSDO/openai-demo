@@ -85,3 +85,76 @@ mark.tooltip.no-match {
     color: #6b7280;
     border: 1px dotted #9aa0a6;
 }
+
+/* ---- Shared brand layout utilities (used across all tabs) ---- */
+.tab-single {
+  max-width: 1040px;
+  margin: 24px auto;
+}
+.two-col {
+  display: flex;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 24px auto;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+.two-col > * {
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.tab-title {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--sct-blue);
+}
+.tab-subtitle {
+  margin: 0 0 20px;
+  color: #55616e;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.section-title {
+  margin: 24px 0 10px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--sct-blue);
+}
+
+.example-full-width {
+  width: 100%;
+}
+
+.tab-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.tab-actions mat-radio-button {
+  margin-right: 14px;
+}
+.tab-status,
+.status {
+  font-style: italic;
+  font-weight: 300;
+}
+.status-ok { color: var(--sct-green); }
+.status-error { color: #d32f2f; }
+
+.result-surface {
+  margin: 0;
+  padding: 16px 20px;
+  background: #ffffff;
+  border: 1px solid #e3e7eb;
+  border-radius: 10px;
+  min-height: 2.5em;
+  line-height: 1.6;
+}
+.result-chips {
+  margin: 4px 0 16px;
+}

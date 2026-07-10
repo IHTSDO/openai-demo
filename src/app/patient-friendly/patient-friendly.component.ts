@@ -97,7 +97,7 @@ export class PatientFriendlyComponent implements OnInit {
     try {
       this.loadingPt = true;
       this.ptResult = "";
-      const prompt = [ {role: "user", content: `Explain this term with a short phrase that a patient can understand, without repeating the source term, in ${this.language} language: "${this.sourceTextPt}"`}];
+      const prompt = [ {role: "user", content: `Give a short patient-friendly term (a lay name a patient would recognise) for the following clinical concept, in ${this.language}. Reply with only the term — no explanation, no full sentence, no punctuation. Clinical concept: "${this.sourceTextPt}"`}];
       const completion = await this.openaiService.completion(prompt, 500, 0);
       const response = completion.data.choices[0].message?.content;
       if (response) {

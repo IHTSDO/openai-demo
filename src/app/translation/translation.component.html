@@ -1,30 +1,34 @@
-<mat-card class="main-card">
-    <mat-card-title>Term translation</mat-card-title>
-    <mat-card-content>
-        <mat-form-field class="example-full-width">
-            <mat-label>Target language</mat-label>
-            <mat-select [(ngModel)]="language">
-                <mat-option *ngFor="let loopLang of languages" [value]="loopLang">
-                {{loopLang}}
-                </mat-option>
-            </mat-select>
-        </mat-form-field>
-        <div class="result">
-            <mat-chip-set>
-                <!-- <mat-icon id="qa">question_answer</mat-icon> -->
-                <mat-chip (click)="run(item)" *ngFor="let item of terms">{{item}}</mat-chip>
-            </mat-chip-set>
-        </div>
-        <br>
-        <mat-form-field class="example-full-width">
-            <mat-label>Text to translate</mat-label>
-            <textarea matInput placeholder="Enter text..." rows="5" [(ngModel)]="sourceText"></textarea>
-        </mat-form-field>
-        <br><br>
-        <h2><app-typewriter [message]="translationResult"></app-typewriter></h2>
-        <mat-spinner diameter="30" *ngIf="loadingTranslation"></mat-spinner>
-    </mat-card-content>
-    <mat-card-actions>
-        <button mat-flat-button color="primary" (click)="runTranslation()">Translate</button>
-    </mat-card-actions>
+<mat-card appearance="outlined">
+  <mat-card-content>
+    <h2 class="tab-title">Term translation</h2>
+    <p class="tab-subtitle">Translate clinical text into the target language.</p>
+
+    <mat-form-field appearance="outline" class="example-full-width">
+      <mat-label>Target language</mat-label>
+      <mat-select [(ngModel)]="language">
+        <mat-option *ngFor="let loopLang of languages" [value]="loopLang">{{loopLang}}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="example-full-width">
+      <mat-label>Text to translate</mat-label>
+      <textarea matInput placeholder="Enter text…" rows="5" [(ngModel)]="sourceText"></textarea>
+    </mat-form-field>
+
+    <div class="result-chips">
+      <mat-chip-set>
+        <mat-chip (click)="run(item)" *ngFor="let item of terms">{{item}}</mat-chip>
+      </mat-chip-set>
+    </div>
+
+    <div class="tab-actions">
+      <button mat-flat-button color="primary" (click)="runTranslation()" [disabled]="loadingTranslation">
+        <mat-icon>translate</mat-icon> Translate
+      </button>
+      <mat-spinner diameter="22" *ngIf="loadingTranslation"></mat-spinner>
+    </div>
+
+    <h3 class="section-title">Translation</h3>
+    <div class="result-surface"><app-typewriter [message]="translationResult"></app-typewriter></div>
+  </mat-card-content>
 </mat-card>

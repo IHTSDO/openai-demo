@@ -1,23 +1,36 @@
 <mat-tab-group class="example-full-width" #mainTabGroup>
-    <mat-tab label="Entity extraction with LLM Chains" [disabled]="!apiKey">
-        <app-nlp-function [apiKey]="apiKey" class="wide-container"></app-nlp-function>
+    <mat-tab label="Entity extraction" [disabled]="!apiKey">
+        <app-nlp-function [apiKey]="apiKey"></app-nlp-function>
     </mat-tab>
     <mat-tab label="Term generation" [disabled]="!apiKey">
-        <div class="h-container">
-            <app-description-generator [apiKey]="apiKey"  class="child-container"></app-description-generator>
-            <app-patient-friendly [apiKey]="apiKey"  class="child-container"></app-patient-friendly>
+        <div class="tab-single">
+            <app-description-generator [apiKey]="apiKey"></app-description-generator>
         </div>
     </mat-tab>
-    <mat-tab label="Explain" [disabled]="!apiKey">
-        <div class="h-container">
-            <app-ecl-explain [apiKey]="apiKey"  class="child-container"></app-ecl-explain>
-            <app-fhir-summarize [apiKey]="apiKey"  class="child-container"></app-fhir-summarize>        </div>
+    <mat-tab label="Patient-friendly" [disabled]="!apiKey">
+        <div class="tab-single">
+            <app-patient-friendly [apiKey]="apiKey"></app-patient-friendly>
+        </div>
+    </mat-tab>
+    <mat-tab label="Explain ECL" [disabled]="!apiKey">
+        <div class="tab-single">
+            <app-ecl-explain [apiKey]="apiKey"></app-ecl-explain>
+        </div>
+    </mat-tab>
+    <mat-tab label="FHIR summary" [disabled]="!apiKey">
+        <div class="tab-single">
+            <app-fhir-summarize [apiKey]="apiKey"></app-fhir-summarize>
+        </div>
     </mat-tab>
     <mat-tab label="Translation" [disabled]="!apiKey">
-        <app-translation [apiKey]="apiKey"  class="child-container"></app-translation>
+        <div class="tab-single">
+            <app-translation [apiKey]="apiKey"></app-translation>
+        </div>
     </mat-tab>
     <mat-tab label="Q&A" [disabled]="!apiKey">
-        <app-support-question [apiKey]="apiKey"  class="child-container"></app-support-question>
+        <div class="tab-single">
+            <app-support-question [apiKey]="apiKey"></app-support-question>
+        </div>
     </mat-tab>
     <mat-tab>
         <ng-template mat-tab-label>
@@ -25,37 +38,55 @@
             <mat-icon fontIcon="check_circle" class="tab-label-icon-OK" *ngIf="apiKey"></mat-icon>
             <mat-icon fontIcon="error" class="tab-label-icon-error" *ngIf="!apiKey"></mat-icon>
         </ng-template>
-        <div class="wide-container">
-            <mat-card>
-                <p class="error" *ngIf="!apiKey">OpenAI API connection not configured!</p>
-                <mat-form-field class="large-input" *ngIf="!apiKey">
-                    <mat-label>OpenAI API Key</mat-label>
-                    <input matInput placeholder="Paste API Key..." value="" type="password" [(ngModel)]="apiKeyInInput">
-                </mat-form-field>
-                <p *ngIf="!apiKey">Enter a secret API Key from OpenAI (<a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key" target="_blank">More information</a>). 
-                The key will be saved in your browser only.</p>
-                <h3 *ngIf="apiKey" id="api-key-ready">
-                    <mat-icon fontIcon="check_circle"></mat-icon>
-                    OpenAI Key Ready
-                </h3>
-                <p *ngIf="apiKey">Using model {{ model }} from OpenAI (<a href="https://help.openai.com/en/collections/3675931-openai-api" target="_blank">More information</a>)</p>
-                <mat-card-actions>
-                    <button mat-flat-button color="primary" (click)="saveToLocalStorage(storageKey,apiKeyInInput)" *ngIf="!apiKey" class="key-button">
-                        Save Key
-                    </button>
-                    <button mat-flat-button color="primary" (click)="removeFromLocalStorage(storageKey)" *ngIf="apiKey" class="key-button">
-                        Remove Key
-                    </button>
-                    <button mat-flat-button color="primary" (click)="clearCache()" *ngIf="apiKey" class="key-button">
-                        Clear local cache
-                    </button>
-                </mat-card-actions>
+        <div class="tab-single">
+            <mat-card appearance="outlined">
+                <mat-card-content>
+                    <h2 class="tab-title">OpenAI API key</h2>
+                    <p class="tab-subtitle">
+                        The key is stored only in your browser (localStorage) and used to call OpenAI directly from this page.
+                    </p>
+
+                    <ng-container *ngIf="!apiKey">
+                        <p class="error">Not configured yet — paste your key to enable the demos.</p>
+                        <mat-form-field appearance="outline" class="example-full-width">
+                            <mat-label>OpenAI API key</mat-label>
+                            <input matInput placeholder="Paste API key…" type="password" [(ngModel)]="apiKeyInInput">
+                        </mat-form-field>
+                        <p class="tab-subtitle" style="margin-bottom:0">
+                            Get a secret key from OpenAI
+                            (<a href="https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key" target="_blank" rel="noopener">more information</a>).
+                        </p>
+                    </ng-container>
+
+                    <div *ngIf="apiKey" class="key-ready">
+                        <mat-icon>check_circle</mat-icon>
+                        <div>
+                            <strong>Key ready</strong>
+                            <div class="tab-subtitle" style="margin:0">
+                                Using model {{ model }}
+                                (<a href="https://help.openai.com/en/collections/3675931-openai-api" target="_blank" rel="noopener">more information</a>).
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-actions">
+                        <button *ngIf="!apiKey" mat-flat-button color="primary" (click)="saveToLocalStorage(storageKey,apiKeyInInput)">
+                            <mat-icon>key</mat-icon> Save key
+                        </button>
+                        <button *ngIf="apiKey" mat-stroked-button (click)="removeFromLocalStorage(storageKey)">
+                            <mat-icon>logout</mat-icon> Remove key
+                        </button>
+                        <button *ngIf="apiKey" mat-stroked-button (click)="clearCache()">
+                            <mat-icon>delete_sweep</mat-icon> Clear local cache
+                        </button>
+                    </div>
+                </mat-card-content>
             </mat-card>
-            <h2>No key? Watch the video demo</h2>
+
+            <h2 class="section-title" style="margin-top:32px">No key? Watch the video demo</h2>
             <div class="video-container">
                 <youtube-player [videoId]="videoId" [width]="640*1.7" [height]="390*1.7"/>
             </div>
-
         </div>
     </mat-tab>
 </mat-tab-group>

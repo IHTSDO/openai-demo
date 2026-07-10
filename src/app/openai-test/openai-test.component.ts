@@ -33,6 +33,7 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
     // runb this check aftwe 1 second to allow the tab group to be initialized
     setTimeout(() => {
       if (!this.apiKey) {
+        // No key yet → jump to the "OpenAI API" tab (last one) so the user can enter it.
         this.tabGroup.selectedIndex = 7;
       }
     }, 500);

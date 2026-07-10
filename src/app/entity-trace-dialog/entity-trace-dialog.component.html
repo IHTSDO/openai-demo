@@ -27,12 +27,17 @@
             <th>Code</th>
             <th>Display</th>
             <th>Dist.</th>
+            <th>Cov.</th>
           </tr>
           <tr *ngFor="let c of step.data.candidates" [class.chosen]="c.chosen">
             <td>{{ c.chosen ? '✓' : '' }}</td>
             <td>{{ c.code }}</td>
-            <td>{{ c.display }}</td>
+            <td>
+              {{ c.display }}
+              <div class="via-syn" *ngIf="c.matchedTerm">via synonym: "{{ c.matchedTerm }}"</div>
+            </td>
             <td>{{ c.distance }}</td>
+            <td>{{ pct(c.coverage) }}</td>
           </tr>
         </table>
 

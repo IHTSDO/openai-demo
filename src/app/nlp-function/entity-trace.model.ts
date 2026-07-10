@@ -13,7 +13,7 @@
 
 export type TraceStatus = 'ok' | 'warn' | 'fail';
 
-export type TraceStage = 'extract' | 'normalize' | 'synonym' | 'search' | 'score' | 'result';
+export type TraceStage = 'extract' | 'normalize' | 'synonym' | 'search' | 'lookup' | 'score' | 'result';
 
 /** One step in an entity's journey through the pipeline. */
 export interface TraceStep {
@@ -35,6 +35,8 @@ export interface TraceCandidate {
   distance: number;
   /** Fraction of the query's content tokens present in this candidate [0..1]. */
   coverage?: number;
+  /** Synonym (not the PT display) that produced the best coverage, if any. */
+  matchedTerm?: string;
   /** True when the candidate's normalized display equals the query term. */
   exact?: boolean;
   /** True for the candidate that was ultimately chosen (if any). */

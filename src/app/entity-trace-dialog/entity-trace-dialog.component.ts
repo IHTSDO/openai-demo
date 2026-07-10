@@ -32,6 +32,7 @@ export class EntityTraceDialogComponent {
       case 'synonym':                 // clinical/general term come from the LLM extraction
         return { label: 'LLM', cls: 'src-llm' };
       case 'search':
+      case 'lookup':
         return { label: 'Snowstorm', cls: 'src-snowstorm' };
       case 'normalize':
       case 'score':
@@ -39,6 +40,11 @@ export class EntityTraceDialogComponent {
       default:
         return { label: 'Result', cls: 'src-result' };
     }
+  }
+
+  /** Format a 0..1 coverage as a percentage for the candidates table. */
+  pct(x?: number): string {
+    return x == null ? '' : Math.round(x * 100) + '%';
   }
 
   iconFor(status: string): string {

@@ -175,6 +175,7 @@ export class NlpFunctionComponent implements OnInit {
       const DISTANCE_THRESHOLD = 50;
       const COVERAGE_MIN = 0.5;
       let considered: any = null; // best candidate seen across passes (by rank)
+      let lastLookup: any = null; // synonym $lookup done in the last consider(), for the trace
 
       // Rank candidates by *our* criteria — exact normalized match, then query
       // token coverage, then edit distance — rather than trusting the server's
@@ -186,9 +187,37 @@ export class NlpFunctionComponent implements OnInit {
           : (!!a.exact !== !!b.exact) ? !!a.exact
           : ((a.coverage ?? 0) !== (b.coverage ?? 0)) ? (a.coverage ?? 0) > (b.coverage ?? 0)
           : a.distance < b.distance;
-      const consider = (cands: TraceCandidate[]): boolean => {
+      const consider = async (cands: TraceCandidate[]): Promise<boolean> => {
+        lastLookup = null;
         if (!cands.length) return false;
         const top = [...cands].sort((a, b) => rankBetter(a, b) ? -1 : 1)[0];
+
+        // The server returns the preferred term, but the match may have been on
+        // a SYNONYM. If low PT coverage is the only thing holding back an
+        // otherwise-close candidate, look up the concept's synonyms and
+        // re-score coverage against the best-matching term.
+        if (!top.exact && (top.coverage ?? 0) < COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD) {
+          const terms = await this.terminologyService.conceptTerms(top.code).toPromise();
+          const qTokens = this.tokenize(queryTerm);
+          for (const t of terms || []) {
+            const cov = this.tokenCoverage(qTokens, t);
+            if (cov > (top.coverage ?? 0)) {
+              top.coverage = cov;
+              top.matchedTerm = t;
+            }
+          }
+          // Don't flag a "synonym" when the winning term is just the PT itself.
+          if (top.matchedTerm && this.normText(top.matchedTerm) === this.normText(top.display)) {
+            top.matchedTerm = undefined;
+          }
+          lastLookup = {
+            code: top.code,
+            terms: (terms || []).length,
+            coverage: top.coverage,
+            matchedTerm: top.matchedTerm
+          };
+        }
+
         if (rankBetter(top, considered)) {
           considered = top;
         }
@@ -204,6 +233,20 @@ export class NlpFunctionComponent implements OnInit {
       };
       const searchStatus = (cands: TraceCandidate[], accepted: boolean) =>
         accepted ? 'ok' : (cands.length ? 'warn' : 'fail');
+      // If the previous consider() ran a synonym $lookup, surface it as its own
+      // (Snowstorm) step right after the search that triggered it.
+      const pushLookupStep = () => {
+        if (!lastLookup) return;
+        entity.trace.steps.push({
+          stage: 'lookup',
+          status: 'ok',
+          title: 'Synonym lookup',
+          detail: `$lookup ${lastLookup.code} · ${lastLookup.terms} term(s) · best coverage ${Math.round((lastLookup.coverage ?? 0) * 100)}%`
+            + (lastLookup.matchedTerm ? ` (via "${lastLookup.matchedTerm}")` : ''),
+          data: { code: lastLookup.code, terms: lastLookup.terms, coverage: lastLookup.coverage, matchedTerm: lastLookup.matchedTerm }
+        });
+        lastLookup = null;
+      };
 
       // Pass 1 — LITERAL search. When the mention is negated (context=absent)
       // we search the POSITIVE term with the negation stripped ("no fever" ->
@@ -213,7 +256,7 @@ export class NlpFunctionComponent implements OnInit {
       const baseTerm = negated ? this.stripNegation(entity.text) : entity.text;
       let queryTerm = baseTerm;
       let candidates = await this.searchCandidates(queryTerm, entity.type);
-      let accepted = consider(candidates);
+      let accepted = await consider(candidates);
       entity.trace.steps.push({
         stage: 'search',
         status: searchStatus(candidates, accepted),
@@ -221,6 +264,7 @@ export class NlpFunctionComponent implements OnInit {
         detail: `${label} · literal "${queryTerm}"${baseTerm !== entity.text ? ` (negation stripped from "${entity.text}")` : ''} → ${candidates.length} candidate(s)`,
         data: { ecl, queryTerm, candidates }
       });
+      pushLookupStep();
 
       // Pass 2 — NORMALIZE by *removing* modifiers (laterality/severity) and
       // parenthetical qualifiers/semantic tags, then search. Skipped when
@@ -238,7 +282,7 @@ export class NlpFunctionComponent implements OnInit {
         if (changed) {
           queryTerm = normalized;
           candidates = await this.searchCandidates(queryTerm, entity.type);
-          accepted = consider(candidates);
+          accepted = await consider(candidates);
           entity.trace.steps.push({
             stage: 'search',
             status: searchStatus(candidates, accepted),
@@ -246,6 +290,7 @@ export class NlpFunctionComponent implements OnInit {
             detail: `${label} · "${queryTerm}" → ${candidates.length} candidate(s)`,
             data: { ecl, queryTerm, candidates }
           });
+          pushLookupStep();
         }
       }
 
@@ -269,7 +314,7 @@ export class NlpFunctionComponent implements OnInit {
         if (usable) {
           queryTerm = clinical;
           candidates = await this.searchCandidates(queryTerm, entity.type);
-          accepted = consider(candidates);
+          accepted = await consider(candidates);
           entity.trace.steps.push({
             stage: 'search',
             status: searchStatus(candidates, accepted),
@@ -277,6 +322,7 @@ export class NlpFunctionComponent implements OnInit {
             detail: `${label} · "${queryTerm}" → ${candidates.length} candidate(s)`,
             data: { ecl, queryTerm, candidates }
           });
+          pushLookupStep();
         }
       }
 
@@ -299,7 +345,7 @@ export class NlpFunctionComponent implements OnInit {
         if (usable) {
           queryTerm = general;
           candidates = await this.searchCandidates(queryTerm, entity.type);
-          accepted = consider(candidates);
+          accepted = await consider(candidates);
           entity.trace.steps.push({
             stage: 'search',
             status: searchStatus(candidates, accepted),
@@ -307,6 +353,7 @@ export class NlpFunctionComponent implements OnInit {
             detail: `${label} · "${queryTerm}" → ${candidates.length} candidate(s)`,
             data: { ecl, queryTerm, candidates }
           });
+          pushLookupStep();
         }
       }
 
@@ -314,7 +361,7 @@ export class NlpFunctionComponent implements OnInit {
       // variants, using the most reduced term we have.
       if (!entity.snomed) {
         candidates = await this.searchCandidates(queryTerm, entity.type, true);
-        accepted = consider(candidates);
+        accepted = await consider(candidates);
         entity.trace.steps.push({
           stage: 'search',
           status: searchStatus(candidates, accepted),
@@ -322,6 +369,7 @@ export class NlpFunctionComponent implements OnInit {
           detail: `${label} · fuzzy "${queryTerm}~" → ${candidates.length} candidate(s)`,
           data: { ecl, queryTerm: `${queryTerm}~`, candidates }
         });
+        pushLookupStep();
       }
 
       entity.trace.steps.push({

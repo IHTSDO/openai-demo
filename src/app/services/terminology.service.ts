@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, Observable, of } from 'rxjs';
+import { catchError, map, Observable, of } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -93,6 +93,31 @@ export class TerminologyService {
       // Let the app keep running by returning an empty result.
       return of(result as T);
     };
+  }
+
+  /**
+   * All terms for a concept (PT/display + every designation/synonym), via
+   * FHIR CodeSystem/$lookup. Used to score token coverage against synonyms,
+   * not only the returned preferred term.
+   */
+  conceptTerms(conceptId: string): Observable<string[]> {
+    return this.lookupConcept(conceptId).pipe(
+      map((res: any) => {
+        const terms: string[] = [];
+        for (const p of res?.parameter || []) {
+          if (p.name === 'display' && p.valueString) {
+            terms.push(p.valueString);
+          } else if (p.name === 'designation') {
+            const value = (p.part || []).find((x: any) => x.name === 'value');
+            if (value?.valueString) {
+              terms.push(value.valueString);
+            }
+          }
+        }
+        return terms;
+      }),
+      catchError(this.handleError<string[]>('conceptTerms', []))
+    );
   }
 
   lookupConcept(conceptId: string) {

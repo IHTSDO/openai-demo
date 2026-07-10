@@ -26,6 +26,9 @@
 .nlp-output {
   margin: 15px;
   max-width: 85%;
+  /* Modest separation between wrapped lines; the pill height itself is set by
+     the vertical padding on mark.tooltip (text-to-border gap) in styles.css. */
+  line-height: 1.9;
 }
 
 .status-ok {

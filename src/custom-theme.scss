@@ -1,38 +1,73 @@
-
-// Custom Theming for Angular Material
-// For more information: https://material.angular.io/guide/theming
+// Custom Theming for Angular Material — SNOMED International 2025 brand
+// https://material.angular.io/guide/theming
 @use '@angular/material' as mat;
-// Plus imports for other components in your app.
 
-// Include the common styles for Angular Material. We include this here so that you only
-// have to load a single css file for Angular Material in your app.
-// Be sure that you only ever include this mixin once!
 @include mat.elevation-classes();
 @include mat.app-background();
 
-// Define the palettes for your theme using the Material Design palettes available in palette.scss
-// (imported above). For each palette, you can optionally specify a default, lighter, and darker
-// hue. Available color palettes: https://material.io/design/color/
-// $implementation-gallery-primary: mat.define-palette(mat.$indigo-palette);
-// $implementation-gallery-accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
-$implementation-gallery-primary: mat.m2-define-palette(mat.$m2-gray-palette, 800);
-$implementation-gallery-accent: mat.m2-define-palette(mat.$m2-light-blue-palette, 800);
+// --- Brand palettes -------------------------------------------------------
+// Primary: SNOMED deep blue #003865. Accent: bright blue #0DA9E0.
+$sct-blue-palette: (
+  50:  #e4ebf0,
+  100: #bccdda,
+  200: #90acc1,
+  300: #648aa7,
+  400: #427194,
+  500: #003865,
+  600: #00325d,
+  700: #002a50,
+  800: #002344,
+  900: #00182f,
+  A100: #82b1ff,
+  A200: #448aff,
+  A400: #2979ff,
+  A700: #2962ff,
+  contrast: (
+    50: #101820, 100: #101820, 200: #101820, 300: #ffffff, 400: #ffffff,
+    500: #ffffff, 600: #ffffff, 700: #ffffff, 800: #ffffff, 900: #ffffff,
+    A100: #101820, A200: #ffffff, A400: #ffffff, A700: #ffffff,
+  )
+);
 
-// The warn palette is optional (defaults to red).
+$sct-cyan-palette: (
+  50:  #e0f4fb,
+  100: #b3e4f5,
+  200: #80d2ee,
+  300: #4dc0e7,
+  400: #26b3e2,
+  500: #0da9e0,
+  600: #0a97c8,
+  700: #0880ad,
+  800: #066a92,
+  900: #034563,
+  A100: #cbeeff,
+  A200: #98ddff,
+  A400: #65ccff,
+  A700: #4bc3ff,
+  contrast: (
+    50: #101820, 100: #101820, 200: #101820, 300: #101820, 400: #101820,
+    500: #101820, 600: #ffffff, 700: #ffffff, 800: #ffffff, 900: #ffffff,
+    A100: #101820, A200: #101820, A400: #101820, A700: #101820,
+  )
+);
+
+$implementation-gallery-primary: mat.m2-define-palette($sct-blue-palette, 500, 300, 800);
+$implementation-gallery-accent: mat.m2-define-palette($sct-cyan-palette, 500, 200, 700);
 $implementation-gallery-warn: mat.m2-define-palette(mat.$m2-red-palette);
 
-// Create the theme object. A theme consists of configurations for individual
-// theming systems such as "color" or "typography".
+// --- Typography: Mulish ---------------------------------------------------
+$sct-typography: mat.m2-define-typography-config(
+  $font-family: 'Mulish, "Helvetica Neue", Arial, sans-serif',
+);
+
 $implementation-gallery-theme: mat.m2-define-light-theme((
   color: (
     primary: $implementation-gallery-primary,
     accent: $implementation-gallery-accent,
     warn: $implementation-gallery-warn,
-  )
+  ),
+  typography: $sct-typography,
 ));
 
-// Include theme styles for core and each component used in your app.
-// Alternatively, you can import and @include the theme mixins for each component
-// that you are using.
 @include mat.all-component-themes($implementation-gallery-theme);
-
+@include mat.typography-hierarchy($sct-typography);

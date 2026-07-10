@@ -1,29 +1,37 @@
 .example-spacer {
-    flex: 1 1 auto;
-  }
-
-button {
-    margin-left: 15px;
+  flex: 1 1 auto;
 }
 
-a {
-    margin-left: 15px;
+/* Brand header: light surface, color-blocked accent line, logo + title. */
+mat-toolbar.app-header {
+  background: #ffffff;
+  color: var(--sct-ink);
+  height: 72px;
+  padding: 0 24px;
+  box-shadow: 0 1px 3px rgba(16, 24, 32, 0.08);
+  /* Color-blocking nod to the brand along the bottom edge. */
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg,
+      var(--sct-blue) 0%, var(--sct-blue-bright) 55%, var(--sct-accent) 100%) 1;
 }
 
-#title {
-    margin-left: 15px;
+.brand-logo {
+  height: 46px;
+  width: auto;
+  display: block;
 }
 
-::ng-deep.mat-menu-panel {
-    max-width:fit-content !important;
-    overflow-x: hidden !important;
+.app-title {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid rgba(16, 24, 32, 0.15);
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sct-blue);
 }
 
-button {
-    overflow-x: hidden !important;
+.header-link {
+  color: var(--sct-blue);
 }
-
-.mat-toolbar {
-    background-color: black;
-    color: white; /* add this line to change the text color to white */
-  }

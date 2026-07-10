@@ -1,26 +1,47 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global styles — SNOMED International 2025 brand */
+
+:root {
+  /* Primary / accent */
+  --sct-blue: #003865;          /* deep blue */
+  --sct-blue-bright: #0da9e0;   /* bright blue */
+  --sct-accent: #ffc600;        /* yellow */
+  --sct-ink: #101820;           /* near-black */
+  /* Secondary (association) palette */
+  --sct-blue-alt: #0067b9;      /* clinical */
+  --sct-green: #009b77;         /* research */
+  --sct-purple: #654ea3;        /* education */
+  --sct-turquoise: #0097a9;     /* tooling */
+  --sct-maroon: #722257;
+  --sct-grey: #cfcdc9;          /* warm grey */
+  --sct-surface: #f4f6f8;
+}
 
 html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+body {
+  margin: 0;
+  font-family: Mulish, "Helvetica Neue", Arial, sans-serif;
+  color: var(--sct-ink);
+  background: var(--sct-surface);
+}
+
+a { color: var(--sct-blue-alt); }
 
 .tooltip {
     position: relative;
     display: inline-block;
-    border-bottom: 1px dotted black;
   }
-  
+
 .tooltip .tooltiptext {
     visibility: hidden;
     width: 120px;
-    background-color: rgb(170, 163, 163);
+    background-color: var(--sct-ink);
     color: #fff;
     text-align: left;
     border-radius: 6px;
-    padding: 5px 0;
     font-size: x-small;
     line-height: normal;
     padding: 10px;
-  
+
     /* Position the tooltip */
     position: absolute;
     z-index: 1;
@@ -28,81 +49,39 @@ body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
     left: 50%;
     margin-left: -60px; /* Use half of the width (120/2 = 60), to center the tooltip */
 }
-  
+
 .tooltip:hover .tooltiptext {
     visibility: visible;
 }
 
-.Finding {
-    background-color: rgb(135, 238, 135);
-    color: black;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-.Symptom {
-    background-color: rgb(144, 242, 213);
-    color: black;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-.Disorder {
-    background-color: rgb(115, 151, 245);
-    color: black;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-.Procedure {
-    background-color: rgb(237, 194, 119);
-    color: black;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-.Morphology {
-    background-color: rgb(229, 123, 236);
-    color: black;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-.Medication {
-    background-color: rgb(90, 85, 238);
-    color: white;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-
-.BodyStructure {
-    background-color: rgb(223, 238, 85);
-    color: black;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
-    border: 2px solid black;
-}
-
-.absent {
-    border: 2px solid red;
-}
-
-/* Keep the highlighted pills compact. The container's line-height (which
-   spaces wrapped lines) inherits into the pill's text; give the pill its own
-   small line-height so its height hugs the text instead of inflating. */
+/* Entity-type highlight pills. Shared look here; each type sets its own
+   brand-secondary background below. */
 mark.tooltip {
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 0.05em 0.6em;
     line-height: 1.15;
-    padding-top: 0.05em;
-    padding-bottom: 0.05em;
+    font-weight: 600;
+}
+
+.Finding        { background-color: var(--sct-blue-alt); }
+.Symptom        { background-color: var(--sct-blue-bright); }
+.Disorder       { background-color: var(--sct-blue); }
+.Procedure      { background-color: var(--sct-green); }
+.Morphology     { background-color: var(--sct-turquoise); }
+.Medication     { background-color: var(--sct-purple); }
+.BodyStructure  { background-color: var(--sct-maroon); }
+
+/* Negated mention: red outline signals "absent". */
+mark.tooltip.absent {
+    border: 2px solid #d32f2f;
 }
 
 /* Detected by the LLM but not resolved on the terminology server: discreet
    dotted outline, no fill, so it reads as "found but unmatched". */
-.no-match {
-    background-color: transparent !important;
-    color: #777 !important;
-    border: 1px dotted #999 !important;
-    border-radius: 20px;
-    padding: 0.2em 0.5em;
+mark.tooltip.no-match {
+    background-color: transparent;
+    color: #6b7280;
+    border: 1px dotted #9aa0a6;
 }

@@ -1,62 +1,83 @@
-<mat-card class="main-card">
-    <mat-card-title class="main-title">SNOMED CT entity extraction from free text (NLP) using API Functions</mat-card-title>
-    <mat-card-content>
-        <mat-form-field class="example-full-width">
-            <mat-label>Clinical text</mat-label>
-            <textarea matInput placeholder="Enter text..." rows="5" [(ngModel)]="clinicalText"></textarea>
-        </mat-form-field>
-        <br><br>
-        <button mat-flat-button color="primary" (click)="runNlp()">Process</button>
-        <span [class.status-ok]="!status.startsWith('Error:')" [class.status-error]="status.startsWith('Error:')">
+<mat-card class="main-card" appearance="outlined">
+  <mat-card-content>
+    <header class="tab-header">
+      <h1 class="tab-title">Clinical entity extraction</h1>
+      <p class="tab-subtitle">
+        Extract clinical terms from a free-text note and bind them to SNOMED&nbsp;CT using an
+        LLM&nbsp;chain with terminology search. Open any row's <strong>Flow</strong> to see how
+        each entity was resolved.
+      </p>
+    </header>
+
+    <section class="input-section">
+      <mat-form-field appearance="outline" class="example-full-width">
+        <mat-label>Clinical text</mat-label>
+        <textarea matInput placeholder="Paste a clinical note…" rows="5" [(ngModel)]="clinicalText"></textarea>
+      </mat-form-field>
+
+      <div class="actions">
+        <button mat-flat-button color="primary" (click)="runNlp()" [disabled]="loadingNlp">
+          <mat-icon>auto_awesome</mat-icon>
+          Process
+        </button>
+        <mat-spinner diameter="22" *ngIf="loadingNlp"></mat-spinner>
+        <span class="status"
+              [class.status-ok]="!status.startsWith('Error:')"
+              [class.status-error]="status.startsWith('Error:')">
           {{ status }}
         </span>
-        <br><br>
-        <h2 *ngIf="nlpResult && ! loadingNlp">Result</h2>
-        <p appHighlightTooltip [entities]="entities" [innerHTML]="clinicalText" class="nlp-output" *ngIf="nlpResult"></p>
-        <table mat-table [dataSource]="entities" class="example-full-width" *ngIf="nlpResult">
-
-            <ng-container matColumnDef="text">
-              <th mat-header-cell *matHeaderCellDef> Original text </th>
-              <td mat-cell *matCellDef="let element"> {{element.text}} </td>
-            </ng-container>
-          
-            <ng-container matColumnDef="type">
-              <th mat-header-cell *matHeaderCellDef> Type </th>
-              <td mat-cell *matCellDef="let element"> {{element.type}} </td>
-            </ng-container>
-          
-            <ng-container matColumnDef="context">
-              <th mat-header-cell *matHeaderCellDef> Context </th>
-              <td mat-cell *matCellDef="let element"> {{element.context}} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="snomed">
-                <th mat-header-cell *matHeaderCellDef> SNOMED Concept </th>
-                <td mat-cell *matCellDef="let element"> {{element.snomed?.expression}} </td>
-            </ng-container>
-
-            <ng-container matColumnDef="flow">
-                <th mat-header-cell *matHeaderCellDef> Flow </th>
-                <td mat-cell *matCellDef="let element">
-                    <button mat-button color="primary" (click)="openTrace(element)">
-                        <mat-icon>account_tree</mat-icon> View
-                    </button>
-                </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.no-match-row]="!row.matched"></tr>
-          </table>
-        <mat-spinner diameter="30" *ngIf="loadingNlp"></mat-spinner>
-        <br><br><hr>
-        <div class="info-container">
-          <h2>Methodology</h2>
-          <p>This web demo uses a simplified version of the clinical entity extraction algorithm described in 
-              <a href="https://github.com/IHTSDO/llm-chain-entity-extraction" target="_blank">https://github.com/IHTSDO/llm-chain-entity-extraction</a>.
-          </p>
-          <p>
-              <a href="assets/AI-Chains-ePoster-Expo-2023.pdf" target="_blank">Download the poster</a> describing this experience from 2023 SNOMED Expo.
-          </p>
       </div>
-    </mat-card-content>
+    </section>
+
+    <section class="results" *ngIf="nlpResult && !loadingNlp">
+      <h2 class="section-title">Result</h2>
+      <p appHighlightTooltip [entities]="entities" [innerHTML]="clinicalText" class="nlp-output"></p>
+
+      <table mat-table [dataSource]="entities" class="results-table">
+        <ng-container matColumnDef="text">
+          <th mat-header-cell *matHeaderCellDef> Original text </th>
+          <td mat-cell *matCellDef="let element"> {{element.text}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef> Type </th>
+          <td mat-cell *matCellDef="let element"> {{element.type}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="context">
+          <th mat-header-cell *matHeaderCellDef> Context </th>
+          <td mat-cell *matCellDef="let element"> {{element.context}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="snomed">
+          <th mat-header-cell *matHeaderCellDef> SNOMED Concept </th>
+          <td mat-cell *matCellDef="let element"> {{element.snomed?.expression}} </td>
+        </ng-container>
+
+        <ng-container matColumnDef="flow">
+          <th mat-header-cell *matHeaderCellDef> Flow </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-button color="primary" (click)="openTrace(element)">
+              <mat-icon>account_tree</mat-icon> View
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" [class.no-match-row]="!row.matched"></tr>
+      </table>
+    </section>
+
+    <details class="methodology">
+      <summary>How it works</summary>
+      <p>
+        This web demo uses a simplified version of the clinical entity extraction algorithm described in
+        <a href="https://github.com/IHTSDO/llm-chain-entity-extraction" target="_blank" rel="noopener">IHTSDO/llm-chain-entity-extraction</a>.
+      </p>
+      <p>
+        <a href="assets/AI-Chains-ePoster-Expo-2023.pdf" target="_blank" rel="noopener">Download the poster</a>
+        describing this experience from the 2023 SNOMED Expo.
+      </p>
+    </details>
+  </mat-card-content>
 </mat-card>

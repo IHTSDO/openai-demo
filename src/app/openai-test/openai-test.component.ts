@@ -4,6 +4,7 @@ import { CacheService } from '../services/cache.service';
 import { OpenaiService } from '../services/openai.service';
 import { MatTabGroup } from '@angular/material/tabs';
 import { MatDialog } from '@angular/material/dialog';
+import { CookieService } from 'ngx-cookie-service';
 import { AiWarningDialogComponent } from '../ai-warning-dialog/ai-warning-dialog.component';
 
 @Component({
@@ -24,7 +25,7 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
 
   constructor(@Inject(LOCAL_STORAGE) private storage: StorageService,
               private cacheService: CacheService, private openaiService: OpenaiService,
-              public dialog: MatDialog) { }
+              public dialog: MatDialog, private cookieService: CookieService) { }
 
   ngOnInit(): void {
     this.model = this.openaiService.getModel();
@@ -35,10 +36,11 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
         this.tabGroup.selectedIndex = 7;
       }
     }, 500);
-    const dialogRef = this.dialog.open(AiWarningDialogComponent);
-    dialogRef.afterClosed().subscribe(result => {
-      // console.log(`Dialog result: ${result}`);
-    });
+    // Only show the AI warning dialog if it hasn't already been accepted,
+    // so it doesn't flash open-then-close for returning users.
+    if (this.cookieService.get('aiWarningAccepted') !== 'true') {
+      this.dialog.open(AiWarningDialogComponent);
+    }
   }
 
   ngOnChanges(changes: SimpleChanges): void {

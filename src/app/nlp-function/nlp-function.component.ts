@@ -18,7 +18,7 @@ export class NlpFunctionComponent implements OnInit {
   nlpResult = "";
   loadingNlp = false; 
   entities: any[] = [];
-  displayedColumns: string[] = ['text', 'singularFsn', 'type', 'context', 'snomed', 'flow'];
+  displayedColumns: string[] = ['text', 'type', 'context', 'snomed', 'flow'];
   status = "";
 
   lateralities: any[] = [
@@ -54,7 +54,7 @@ export class NlpFunctionComponent implements OnInit {
     this.loadingNlp = true;
     this.nlpResult = "";
     this.entities = [];
-    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia").`};
+    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass").`};
     // Strict JSON schema for Structured Outputs. In strict mode every property
     // must be listed in `required` and objects need additionalProperties:false;
     // optional fields (severity/laterality) are modelled as nullable unions.
@@ -77,10 +77,11 @@ export class NlpFunctionComponent implements OnInit {
                 fsn: { type: "string", description: "The fully specified name of the term. Spell out acronyms." },
                 singularFsn: { type: "string", description: "The fsn, removing plurals" },
                 clinicalTerm: { type: "string", description: "The standard clinical term used in SNOMED CT for this concept, mapping lay/descriptive phrasing to formal terminology and correcting spelling (e.g. 'low platelet count' -> 'thrombocytopenia', 'high blood pressure' -> 'hypertension'). If the text is already a standard clinical term, repeat it unchanged." },
+                generalTerm: { type: "string", description: "A broader, more general clinical term for this concept, dropping specific anatomical or other qualifiers so it can still match when the specific phrasing is absent from the terminology (e.g. 'bilateral pelvic masses' -> 'mass', 'left frontal headache' -> 'headache'). Use the clinical/standard wording." },
                 severity: { type: ["string", "null"], enum: ["mild", "moderate", "severe", null], description: "The severity contained in the term, or null if none" },
                 laterality: { type: ["string", "null"], enum: ["left", "right", "bilateral", null], description: "The laterality contained in the term, or null if none" }
               },
-              required: ["text", "type", "context", "fsn", "singularFsn", "clinicalTerm", "severity", "laterality"]
+              required: ["text", "type", "context", "fsn", "singularFsn", "clinicalTerm", "generalTerm", "severity", "laterality"]
             }
           }
         },
@@ -172,22 +173,29 @@ export class NlpFunctionComponent implements OnInit {
       this.status = `Phase 2/3 · Matching with SNOMED CT (${count} of ${entities.length})…`;
       const { ecl, label } = this.terminologyService.eclForType(entity.type);
       const DISTANCE_THRESHOLD = 50;
-      let bestCandidate: any = null;
-      let bestDistance = Infinity;
+      const COVERAGE_MIN = 0.5;
+      let considered: any = null; // best candidate seen across passes (by rank)
 
-      // Accept the top candidate of a pass when it is within the distance
-      // threshold; always remember the closest candidate seen (for reporting).
-      // Escalation is gated on "no accepted match yet" — NOT on "zero
-      // candidates" — so junk results (returned but too far) still fall through
-      // to the next, smarter pass.
+      // Rank candidates by *our* criteria — exact normalized match, then query
+      // token coverage, then edit distance — rather than trusting the server's
+      // order (Snowstorm Lite mis-ranks broad terms). Escalation is gated on
+      // "no accepted match yet", NOT "zero candidates", so lexically unrelated
+      // noise (returned but low-coverage) still falls through to the next pass.
+      const rankBetter = (a: any, b: any): boolean =>
+        !b ? true
+          : (!!a.exact !== !!b.exact) ? !!a.exact
+          : ((a.coverage ?? 0) !== (b.coverage ?? 0)) ? (a.coverage ?? 0) > (b.coverage ?? 0)
+          : a.distance < b.distance;
       const consider = (cands: TraceCandidate[]): boolean => {
         if (!cands.length) return false;
-        const top = cands[0];
-        if (top.distance < bestDistance) {
-          bestDistance = top.distance;
-          bestCandidate = { code: top.code, display: top.display };
+        const top = [...cands].sort((a, b) => rankBetter(a, b) ? -1 : 1)[0];
+        if (rankBetter(top, considered)) {
+          considered = top;
         }
-        if (!entity.snomed && top.distance < DISTANCE_THRESHOLD) {
+        // Confidence guardrail: accept only an exact match, or one with enough
+        // query-token coverage AND a sane edit distance.
+        const confident = !!top.exact || ((top.coverage ?? 0) >= COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD);
+        if (!entity.snomed && confident) {
           entity.snomed = { code: top.code, display: top.display };
           top.chosen = true;
           return true;
@@ -267,7 +275,37 @@ export class NlpFunctionComponent implements OnInit {
         }
       }
 
-      // Pass 4 — FUZZY search (Snowstorm `~`): last resort for typos / spelling
+      // Pass 4 — GENERAL TERM from the extraction: a broader form the LLM
+      // produced (e.g. "bilateral pelvic masses" → "mass"), for when the
+      // specific phrasing is absent from the terminology. Also free (from the
+      // initial extraction), so no extra LLM round-trip.
+      if (!entity.snomed) {
+        const general = (entity.generalTerm || '').trim();
+        const usable = !!general
+          && general.toLowerCase() !== queryTerm.toLowerCase()
+          && general.toLowerCase() !== entity.text.toLowerCase();
+        entity.trace.steps.push({
+          stage: 'synonym',
+          status: general ? 'ok' : 'warn',
+          title: 'General term (from extraction)',
+          detail: general ? `"${entity.text}" → "${general}"` : `no general term provided`,
+          data: { from: entity.text, to: general }
+        });
+        if (usable) {
+          queryTerm = general;
+          candidates = await this.searchCandidates(queryTerm, entity.type);
+          accepted = consider(candidates);
+          entity.trace.steps.push({
+            stage: 'search',
+            status: searchStatus(candidates, accepted),
+            title: 'General term search',
+            detail: `${label} · "${queryTerm}" → ${candidates.length} candidate(s)`,
+            data: { ecl, queryTerm, candidates }
+          });
+        }
+      }
+
+      // Pass 5 — FUZZY search (Snowstorm `~`): last resort for typos / spelling
       // variants, using the most reduced term we have.
       if (!entity.snomed) {
         candidates = await this.searchCandidates(queryTerm, entity.type, true);
@@ -283,12 +321,12 @@ export class NlpFunctionComponent implements OnInit {
 
       entity.trace.steps.push({
         stage: 'score',
-        status: entity.snomed ? 'ok' : (bestCandidate ? 'warn' : 'fail'),
-        title: entity.snomed ? 'Candidate accepted' : (bestCandidate ? 'Candidate rejected' : 'No candidate to score'),
-        detail: bestCandidate
-          ? `closest "${bestCandidate.display}" · distance ${bestDistance} (threshold < ${DISTANCE_THRESHOLD})`
+        status: entity.snomed ? 'ok' : (considered ? 'warn' : 'fail'),
+        title: entity.snomed ? 'Candidate accepted' : (considered ? 'Candidate rejected' : 'No candidate to score'),
+        detail: considered
+          ? `closest "${considered.display}" · distance ${considered.distance}, coverage ${Math.round((considered.coverage ?? 0) * 100)}% (accept if exact, or ≥${Math.round(COVERAGE_MIN * 100)}% coverage & distance < ${DISTANCE_THRESHOLD})`
           : `nothing returned by the server for this term/hierarchy`,
-        data: { distance: bestDistance === Infinity ? null : bestDistance, threshold: DISTANCE_THRESHOLD }
+        data: { distance: considered?.distance ?? null, coverage: considered?.coverage ?? null, threshold: DISTANCE_THRESHOLD, coverageMin: COVERAGE_MIN }
       });
       if (entity.snomed) {
         entity.matched = true;
@@ -322,10 +360,10 @@ export class NlpFunctionComponent implements OnInit {
       } else {
         // Detected by the LLM but not resolved on the terminology server.
         entity.matched = false;
-        if (!bestCandidate) {
+        if (!considered) {
           entity.snomed = { expression: 'No match found (server returned no candidates)' };
         } else {
-          entity.snomed = { expression: `No match found (closest: "${bestCandidate.display}", distance ${bestDistance})` };
+          entity.snomed = { expression: `No match found (closest: "${considered.display}", distance ${considered.distance}, coverage ${Math.round((considered.coverage ?? 0) * 100)}%)` };
         }
       }
 
@@ -351,13 +389,41 @@ export class NlpFunctionComponent implements OnInit {
   private async searchCandidates(term: string, type: string, fuzzy: boolean = false): Promise<TraceCandidate[]> {
     const filter = fuzzy ? `${term}~` : term;
     const response = await this.terminologyService.matchText(filter, type).toPromise();
-    return (response?.expansion?.contains || []).map((c: any) => ({
-      code: c.code,
-      display: c.display,
-      // Distance is measured against the clean term (without the fuzzy '~'),
-      // case-insensitive so casing differences don't inflate it.
-      distance: this.levenshteinDistance(term.toLowerCase(), this.removeSemtag(c.display).toLowerCase())
-    }));
+    const queryTokens = this.tokenize(term);
+    const queryNorm = this.normText(term);
+    return (response?.expansion?.contains || []).map((c: any) => {
+      const clean = this.removeSemtag(c.display);
+      return {
+        code: c.code,
+        display: c.display,
+        // Distance/coverage are measured against the clean term (no fuzzy '~'),
+        // case-insensitive so casing differences don't inflate them.
+        distance: this.levenshteinDistance(term.toLowerCase(), clean.toLowerCase()),
+        coverage: this.tokenCoverage(queryTokens, clean),
+        exact: this.normText(clean) === queryNorm
+      };
+    });
+  }
+
+  /** Normalize for token comparison: drop semtag, lowercase, keep alphanumerics. */
+  private normText(s: string): string {
+    return this.removeSemtag(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  /** Content tokens: normalized, stopwords removed, lightly stemmed. */
+  private tokenize(s: string): string[] {
+    const stop = new Set(['of', 'the', 'a', 'an', 'and', 'with', 'to', 'in', 'on', 'for', 'by', 'or']);
+    return this.normText(s).split(' ')
+      .filter(t => t && !stop.has(t))
+      .map(t => t.length > 4 ? t.replace(/(es|s)$/, '') : t);
+  }
+
+  /** Fraction of the query's content tokens present in the candidate display. */
+  private tokenCoverage(queryTokens: string[], display: string): number {
+    if (!queryTokens.length) return 0;
+    const set = new Set(this.tokenize(display));
+    const matched = queryTokens.filter(t => set.has(t)).length;
+    return matched / queryTokens.length;
   }
 
   /**

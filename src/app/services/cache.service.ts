@@ -4,32 +4,44 @@ import { Injectable } from '@angular/core';
   providedIn: 'root'
 })
 export class CacheService {
-  
-  private cache: { [key: string]: any } = {};
+
+  private cache: { [key: string]: { data: any; timestamp: number } } = {};
   private maxCacheSize = 50;
+
+  // Bump the version suffix to invalidate every cached entry after a change to
+  // what/how we cache (e.g. a new extraction schema shape). Old blobs under a
+  // previous key are simply never read.
+  private static readonly STORAGE_KEY = 'cache:v2';
 
   constructor() {
     // Load the cache from localStorage
-    const cacheString = localStorage.getItem('cache');
+    const cacheString = localStorage.getItem(CacheService.STORAGE_KEY);
     if (cacheString) {
-      this.cache = JSON.parse(cacheString);
+      try {
+        this.cache = JSON.parse(cacheString);
+      } catch {
+        this.cache = {};
+      }
     }
+    // Drop the legacy, unversioned cache so it doesn't waste quota.
+    localStorage.removeItem('cache');
   }
 
   addToCache(params: any, value: any) {
-    const key = this.objectHash(params);
+    const key = this.cacheKey(params);
     this.cache[key] = { data: value, timestamp: Date.now() };
     this.checkCacheSize();
-    // Save the cache to localStorage
-    localStorage.setItem('cache', JSON.stringify(this.cache));
+    this.persist();
   }
 
   getFromCache(params: any): any {
-    const key = this.objectHash(params);
+    const key = this.cacheKey(params);
     const cachedData = this.cache[key];
     if (cachedData) {
-      cachedData.timestamp = Date.now(); // Update the timestamp
-      localStorage.setItem('cache', JSON.stringify(this.cache));
+      // Update recency in memory only. Persisting on every read meant
+      // re-serializing the whole cache to localStorage on each hit
+      // (synchronous and O(cache size)); recency across reloads isn't worth it.
+      cachedData.timestamp = Date.now();
       return cachedData.data;
     }
     return null;
@@ -37,45 +49,50 @@ export class CacheService {
 
   clearCache() {
     this.cache = {};
-    localStorage.removeItem('cache');
+    localStorage.removeItem(CacheService.STORAGE_KEY);
+  }
+
+  private persist() {
+    try {
+      localStorage.setItem(CacheService.STORAGE_KEY, JSON.stringify(this.cache));
+    } catch {
+      // Likely QuotaExceededError — evict the oldest entry and retry once.
+      const oldest = this.oldestKey();
+      if (oldest) {
+        delete this.cache[oldest];
+        try {
+          localStorage.setItem(CacheService.STORAGE_KEY, JSON.stringify(this.cache));
+        } catch {
+          // Give up silently; caching is best-effort.
+        }
+      }
+    }
   }
 
   private checkCacheSize() {
-    // If the cache has more than the maximum number of elements, remove the oldest ones
-    const cacheKeys = Object.keys(this.cache);
-    if (cacheKeys.length > this.maxCacheSize) {
-      const oldestKey = cacheKeys.reduce((oldest, key) => {
-        if (!oldest) {
-          return key;
-        }
-        const oldestTimestamp = this.cache[oldest].timestamp;
-        const currentTimestamp = this.cache[key].timestamp;
-        return oldestTimestamp < currentTimestamp ? oldest : key;
-      });
-      delete this.cache[oldestKey];
+    // If the cache exceeds the maximum number of elements, remove the oldest.
+    if (Object.keys(this.cache).length > this.maxCacheSize) {
+      const oldest = this.oldestKey();
+      if (oldest) {
+        delete this.cache[oldest];
+      }
     }
   }
-  
-  objectHash(obj: Record<string, unknown>): string {
-    const str = JSON.stringify(obj);
-    let hash = 0;
-  
-    for (let i = 0; i < str.length; i++) {
-      const charCode = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + charCode;
-      hash |= 0; // Convert to 32-bit integer
-    }
-  
-    return hash.toString(16);
-  }
-  
 
-//   objectHash(obj: any): number {
-//     const str = JSON.stringify(obj);
-//     var h: number = 0;
-//     for (var i = 0; i < str.length; i++) {
-//         h = 31 * h + str.charCodeAt(i);
-//     }
-//     return h & 0xFFFFFFFF
-// }
+  private oldestKey(): string {
+    return Object.keys(this.cache).reduce(
+      (oldest, key) => (!oldest || this.cache[key].timestamp < this.cache[oldest].timestamp ? key : oldest),
+      ''
+    );
+  }
+
+  /**
+   * Collision-proof cache key: the full canonical JSON of the params. The
+   * previous 32-bit string hash could collide and return the wrong cached
+   * result; keys built from object literals with a fixed property order
+   * serialize deterministically, so equal params always produce equal keys.
+   */
+  private cacheKey(params: any): string {
+    return JSON.stringify(params);
+  }
 }

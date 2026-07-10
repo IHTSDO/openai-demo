@@ -1,5 +1,5 @@
 <mat-card class="main-card">
-    <mat-card-title>SNOMED CT entity extraction from free text (NLP) using API Functions</mat-card-title>
+    <mat-card-title class="main-title">SNOMED CT entity extraction from free text (NLP) using API Functions</mat-card-title>
     <mat-card-content>
         <mat-form-field class="example-full-width">
             <mat-label>Clinical text</mat-label>
@@ -18,11 +18,6 @@
             <ng-container matColumnDef="text">
               <th mat-header-cell *matHeaderCellDef> Original text </th>
               <td mat-cell *matCellDef="let element"> {{element.text}} </td>
-            </ng-container>
-          
-            <ng-container matColumnDef="singularFsn">
-              <th mat-header-cell *matHeaderCellDef> FSN </th>
-              <td mat-cell *matCellDef="let element"> {{element.singularFsn}} </td>
             </ng-container>
           
             <ng-container matColumnDef="type">

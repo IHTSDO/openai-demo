@@ -33,6 +33,10 @@ export interface TraceCandidate {
   display: string;
   /** Levenshtein distance between the searched term and this candidate. */
   distance: number;
+  /** Fraction of the query's content tokens present in this candidate [0..1]. */
+  coverage?: number;
+  /** True when the candidate's normalized display equals the query term. */
+  exact?: boolean;
   /** True for the candidate that was ultimately chosen (if any). */
   chosen?: boolean;
 }

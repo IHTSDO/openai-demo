@@ -54,6 +54,15 @@
           <td mat-cell *matCellDef="let element"> {{element.snomed?.expression}} </td>
         </ng-container>
 
+        <ng-container matColumnDef="steps">
+          <th mat-header-cell *matHeaderCellDef> Steps </th>
+          <td mat-cell *matCellDef="let element">
+            <span class="step-count" [class.step-count-high]="(element.trace?.steps?.length || 0) > 5">
+              {{ element.trace?.steps?.length || 0 }}
+            </span>
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="flow">
           <th mat-header-cell *matHeaderCellDef> Flow </th>
           <td mat-cell *matCellDef="let element">

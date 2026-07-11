@@ -18,7 +18,7 @@ export class NlpFunctionComponent implements OnInit {
   nlpResult = "";
   loadingNlp = false; 
   entities: any[] = [];
-  displayedColumns: string[] = ['text', 'type', 'context', 'snomed', 'flow'];
+  displayedColumns: string[] = ['text', 'type', 'context', 'snomed', 'steps', 'flow'];
   status = "";
 
   lateralities: any[] = [
@@ -54,7 +54,7 @@ export class NlpFunctionComponent implements OnInit {
     this.loadingNlp = true;
     this.nlpResult = "";
     this.entities = [];
-    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever".`};
+    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever". If the note is not in English, keep "text" verbatim in the source language (for highlighting) but give clinicalTerm and generalTerm IN ENGLISH (translate them), and set "language" to the source language, e.g. "fiebre" -> language "Spanish", clinicalTerm "fever".`};
     // Strict JSON schema for Structured Outputs. In strict mode every property
     // must be listed in `required` and objects need additionalProperties:false;
     // optional fields (severity/laterality) are modelled as nullable unions.
@@ -76,12 +76,13 @@ export class NlpFunctionComponent implements OnInit {
                 context: { type: "string", enum: ["present", "absent", "unknown"], description: "Whether the term is present, absent or unknown" },
                 fsn: { type: "string", description: "The fully specified name of the term. Spell out acronyms." },
                 singularFsn: { type: "string", description: "The fsn, removing plurals" },
-                clinicalTerm: { type: "string", description: "The standard clinical term used in SNOMED CT for this concept, mapping lay/descriptive phrasing to formal terminology and correcting spelling (e.g. 'low platelet count' -> 'thrombocytopenia', 'high blood pressure' -> 'hypertension'). ALWAYS give the POSITIVE concept even when the text is negated — the negation is captured separately in context (e.g. 'no fever' -> 'fever', 'denies chest pain' -> 'chest pain'). If the text is already a standard positive clinical term, repeat it unchanged." },
-                generalTerm: { type: "string", description: "A broader, more general clinical term for this concept, dropping specific anatomical or other qualifiers so it can still match when the specific phrasing is absent from the terminology (e.g. 'bilateral pelvic masses' -> 'mass', 'left frontal headache' -> 'headache'). Use the clinical/standard wording." },
+                language: { type: "string", description: "The language of the extracted text (English name of the language, e.g. 'English', 'Spanish', 'French')." },
+                clinicalTerm: { type: "string", description: "The standard clinical term used in SNOMED CT for this concept, IN ENGLISH — translate from the source language if the text is not English (e.g. 'fiebre' -> 'fever', 'insuffisance cardiaque' -> 'heart failure'). Map lay/descriptive phrasing to formal terminology and correct spelling (e.g. 'low platelet count' -> 'thrombocytopenia'). ALWAYS give the POSITIVE concept even when the text is negated — the negation is captured separately in context (e.g. 'no fever' -> 'fever'). If the text is already a standard positive English clinical term, repeat it unchanged." },
+                generalTerm: { type: "string", description: "A broader, more general clinical term for this concept, IN ENGLISH, dropping specific anatomical or other qualifiers so it can still match when the specific phrasing is absent from the terminology (e.g. 'bilateral pelvic masses' -> 'mass', 'left frontal headache' -> 'headache'). Use the clinical/standard wording." },
                 severity: { type: ["string", "null"], enum: ["mild", "moderate", "severe", null], description: "The severity contained in the term, or null if none" },
                 laterality: { type: ["string", "null"], enum: ["left", "right", "bilateral", null], description: "The laterality contained in the term, or null if none" }
               },
-              required: ["text", "type", "context", "fsn", "singularFsn", "clinicalTerm", "generalTerm", "severity", "laterality"]
+              required: ["text", "type", "context", "language", "fsn", "singularFsn", "clinicalTerm", "generalTerm", "severity", "laterality"]
             }
           }
         },
@@ -103,10 +104,11 @@ export class NlpFunctionComponent implements OnInit {
           stage: 'extract',
           status: 'ok',
           title: 'Extracted by LLM',
-          detail: `"${entity.text}" → ${rawType}, ${entity.context}`,
+          detail: `"${entity.text}" → ${rawType}, ${entity.context}` + (entity.language && entity.language !== 'English' ? ` · ${entity.language}` : ''),
           data: {
             type: rawType,
             context: entity.context,
+            language: entity.language,
             fsn: entity.fsn,
             singularFsn: entity.singularFsn,
             severity: entity.severity ?? null,
@@ -304,12 +306,13 @@ export class NlpFunctionComponent implements OnInit {
         const usable = !!clinical
           && clinical.toLowerCase() !== queryTerm.toLowerCase()
           && clinical.toLowerCase() !== entity.text.toLowerCase();
+        const translated = entity.language && entity.language !== 'English';
         entity.trace.steps.push({
           stage: 'synonym',
           status: clinical ? 'ok' : 'warn',
-          title: 'Clinical term (from extraction)',
+          title: translated ? `Clinical term (translated from ${entity.language})` : 'Clinical term (from extraction)',
           detail: clinical ? `"${entity.text}" → "${clinical}"` : `no clinical term provided`,
-          data: { from: entity.text, to: clinical }
+          data: { from: entity.text, to: clinical, language: entity.language }
         });
         if (usable) {
           queryTerm = clinical;

@@ -66,6 +66,22 @@
   background-color: #fdecea;
 }
 
+/* Flow step count: quick read of how easy/complex each entity was to resolve. */
+.step-count {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 1px 8px;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 600;
+  background: #eceff1;
+  color: #546e7a;
+}
+.step-count-high {
+  background: #fff3e0;
+  color: #ef6c00;
+}
+
 .mat-column-snomed {
   word-wrap: break-word !important;
   white-space: unset !important;

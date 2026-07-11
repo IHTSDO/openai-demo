@@ -9,18 +9,52 @@ import { CacheService } from './cache.service';
 export class OpenaiService {
 
   apiKey = '';
-  // Single model for the whole app. GPT-5 family: does NOT accept `temperature`
-  // and requires `max_completion_tokens` instead of `max_tokens`.
+  // Current model. The GPT-5 family does NOT accept `temperature` and requires
+  // `max_completion_tokens` instead of `max_tokens` — the calls below already
+  // comply, so every model in `models` works with the same code.
   model = 'gpt-5-mini';
-  // USD per 1M tokens for `model` (gpt-5-mini): input / output.
+  // USD per 1M tokens for the current `model`: input / output. Updated by
+  // setModel() from the catalog below.
   promptCostPer1M = 0.25;
   completionCostPer1M = 2.00;
   disableCache = false;
 
-  constructor(@Inject(LOCAL_STORAGE) private storage: StorageService, private cacheService: CacheService) { }
+  /**
+   * Selectable models — all use the same Chat Completions API + Structured
+   * Outputs. `price`/`speed` are rough guides for the UI; USD-per-1M costs are
+   * used for the cost estimate. Verify IDs/prices against the OpenAI pricing
+   * page, as the lineup changes.
+   */
+  readonly models = [
+    { id: 'gpt-5-nano',    label: 'GPT-5 nano',    promptCostPer1M: 0.05,  completionCostPer1M: 0.40,   price: '$',     speed: 'Fast' },
+    { id: 'gpt-5.4-nano',  label: 'GPT-5.4 nano',  promptCostPer1M: 0.20,  completionCostPer1M: 1.25,   price: '$',     speed: 'Fast' },
+    { id: 'gpt-5-mini',    label: 'GPT-5 mini',    promptCostPer1M: 0.25,  completionCostPer1M: 2.00,   price: '$',     speed: 'Fast' },
+    { id: 'gpt-5.6-luna',  label: 'GPT-5.6 Luna',  promptCostPer1M: 1.00,  completionCostPer1M: 6.00,   price: '$$',    speed: 'Balanced' },
+    { id: 'gpt-5.6-terra', label: 'GPT-5.6 Terra', promptCostPer1M: 2.50,  completionCostPer1M: 15.00,  price: '$$$',   speed: 'Balanced' },
+    { id: 'gpt-5.6-sol',   label: 'GPT-5.6 Sol',   promptCostPer1M: 5.00,  completionCostPer1M: 30.00,  price: '$$$$',  speed: 'Deep' },
+    { id: 'gpt-5.5-pro',   label: 'GPT-5.5 Pro',   promptCostPer1M: 30.00, completionCostPer1M: 180.00, price: '$$$$$', speed: 'Deep' },
+  ];
+
+  constructor(@Inject(LOCAL_STORAGE) private storage: StorageService, private cacheService: CacheService) {
+    const saved = this.storage.get('sctModel');
+    if (saved && this.models.some(m => m.id === saved)) {
+      this.setModel(saved);
+    }
+  }
 
   getModel() {
     return this.model;
+  }
+
+  /** Switch the active model and update the cost rates + persist the choice. */
+  setModel(id: string) {
+    this.model = id;
+    const m = this.models.find(x => x.id === id);
+    if (m) {
+      this.promptCostPer1M = m.promptCostPer1M;
+      this.completionCostPer1M = m.completionCostPer1M;
+    }
+    this.storage.set('sctModel', id);
   }
 
   /** Estimated USD cost for a usage object, formatted to 4 decimals. */

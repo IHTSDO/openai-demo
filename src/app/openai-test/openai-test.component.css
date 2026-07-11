@@ -17,6 +17,11 @@
   font-weight: 600;
 }
 
+.model-select {
+  width: 340px;
+  max-width: 100%;
+}
+
 .key-ready {
   display: flex;
   align-items: center;

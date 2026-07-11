@@ -66,4 +66,14 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
     return this.storage.get(key);
   }
 
+  /** Selectable models (id, label, price tier, speed) for the model picker. */
+  get models() {
+    return this.openaiService.models;
+  }
+
+  onModelChange(id: string) {
+    this.openaiService.setModel(id);
+    this.model = id;
+  }
+
 }

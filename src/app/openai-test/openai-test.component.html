@@ -80,6 +80,17 @@
                             <mat-icon>delete_sweep</mat-icon> Clear local cache
                         </button>
                     </div>
+
+                    <h3 class="section-title" style="margin-top:28px">Model</h3>
+                    <mat-form-field appearance="outline" class="model-select">
+                        <mat-label>Model</mat-label>
+                        <mat-select [ngModel]="model" (ngModelChange)="onModelChange($event)">
+                            <mat-option *ngFor="let m of models" [value]="m.id">
+                                {{ m.label }} — {{ m.price }} · {{ m.speed }}
+                            </mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                    <p class="tab-subtitle" style="margin:0">Price is relative ($ = cheapest); speed is a rough guide. All models use the same API and structured outputs.</p>
                 </mat-card-content>
             </mat-card>
 

@@ -54,7 +54,7 @@ export class NlpFunctionComponent implements OnInit {
     this.loadingNlp = true;
     this.nlpResult = "";
     this.entities = [];
-    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. The "text" field must be an exact verbatim substring copied from the input note (character-for-character, so it can be highlighted); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever". If the note is not in English, keep "text" verbatim in the source language (for highlighting) but give clinicalTerm and generalTerm IN ENGLISH (translate them), and set "language" to the source language, e.g. "fiebre" -> language "Spanish", clinicalTerm "fever".`};
+    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. Be thorough: also capture imaging and procedure mentions even when abbreviated (e.g. CT, MRI, X-ray, ultrasound, ECG). The "text" field must be the clinical term copied verbatim from the input note (so it can be highlighted), but WITHOUT surrounding/trailing punctuation (commas, periods, semicolons) and WITHOUT leading articles (a/an/the); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever". If the note is not in English, keep "text" verbatim in the source language (for highlighting) but give clinicalTerm and generalTerm IN ENGLISH (translate them), and set "language" to the source language, e.g. "fiebre" -> language "Spanish", clinicalTerm "fever".`};
     // Strict JSON schema for Structured Outputs. In strict mode every property
     // must be listed in `required` and objects need additionalProperties:false;
     // optional fields (severity/laterality) are modelled as nullable unions.
@@ -71,7 +71,7 @@ export class NlpFunctionComponent implements OnInit {
               type: "object",
               additionalProperties: false,
               properties: {
-                text: { type: "string", description: "The EXACT verbatim substring copied character-for-character from the input note (same words, same casing, same punctuation/hyphens). Must appear literally in the input so it can be highlighted. Do NOT paraphrase, normalize, add words, parentheses, or annotations here — put normalized/inferred wording in fsn and clinicalTerm instead." },
+                text: { type: "string", description: "The clinical term copied verbatim from the input note (same words, casing and internal hyphens/spaces, so it can be highlighted), but WITHOUT any surrounding or trailing punctuation (no commas, periods, semicolons, quotes) and WITHOUT leading articles (a/an/the). E.g. from '…, nausea, vomiting.' use 'nausea' and 'vomiting'. Do NOT paraphrase, normalize, add words, parentheses, or annotations here — put normalized/inferred wording in fsn and clinicalTerm instead." },
                 type: { type: "string", enum: ["finding", "procedure", "medication", "morphology", "body structure"], description: "The type of clinical term" },
                 context: { type: "string", enum: ["present", "absent", "unknown"], description: "Whether the term is present, absent or unknown" },
                 fsn: { type: "string", description: "The fully specified name of the term. Spell out acronyms." },
@@ -93,6 +93,13 @@ export class NlpFunctionComponent implements OnInit {
     const completion = await this.openaiService.extract([systemPrompt, {role: "user", content: message}], schema, { maxCompletionTokens: 10000 });
     this.entities = completion.parsed?.terms ?? [];
     this.entities.forEach((entity: any) => {
+      // Defensively trim surrounding punctuation/whitespace the model sometimes
+      // includes in the verbatim span (e.g. "nausea," / "pancytopenia.").
+      // Internal hyphens/apostrophes/spaces are preserved.
+      entity.text = (entity.text || '')
+        .replace(/^[\s.,;:!?()"'\[\]{}]+/, '')
+        .replace(/[\s.,;:!?()"'\[\]{}]+$/, '')
+        .trim();
       // Start the per-entity trace with what the LLM produced (raw type,
       // before we collapse it to a single-letter code).
       const rawType = entity.type;
@@ -146,7 +153,7 @@ export class NlpFunctionComponent implements OnInit {
     this.nlpResult = JSON.stringify(this.entities, null, 2);
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
     const costPart = completion.cached ? 'Using AI cache · $0.00' : `Cost: $${completion.cost}`;
-    this.status = `Done in ${elapsed}s · ${matchedCount}/${this.entities.length} entities matched to SNOMED CT · ${costPart}`;
+    this.status = `Done in ${elapsed}s · ${matchedCount}/${this.entities.length} entities matched to SNOMED CT · ${costPart} · ${this.openaiService.getModel()}`;
     // const functionPrompt = {role: "function", name: functionName, content: JSON.stringify(this.entities)};
     // const completion2 = await this.openaiService.completion(
     //   [

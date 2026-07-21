@@ -1,0 +1,37 @@
+.tune-hint {
+  margin: 0 0 16px;
+  color: #55616e;
+  font-size: 0.9rem;
+}
+
+.tune-field {
+  display: block;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.tune-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.tune-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Amber marker on any parameter that differs from its default. */
+.tune-changed {
+  color: #ef6c00;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.tune-changed-count {
+  color: #ef6c00;
+  font-weight: 600;
+}

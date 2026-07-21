@@ -1,9 +1,11 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { TerminologyService } from '../services/terminology.service';
 import { OpenaiService } from '../services/openai.service';
 import { TraceCandidate } from './entity-trace.model';
 import { EntityTraceDialogComponent } from '../entity-trace-dialog/entity-trace-dialog.component';
+import { AlgorithmTuningDialogComponent } from '../algorithm-tuning-dialog/algorithm-tuning-dialog.component';
+import { TuningService } from '../services/tuning.service';
 
 @Component({
     selector: 'app-nlp-function',
@@ -13,6 +15,26 @@ import { EntityTraceDialogComponent } from '../entity-trace-dialog/entity-trace-
 })
 export class NlpFunctionComponent implements OnInit {
   @Input() apiKey: string = "";
+
+  @ViewChild('mermaidHost') mermaidHost?: ElementRef<HTMLElement>;
+  private diagramRendered = false;
+  // "How it works" flow: LLM (purple) and Snowstorm (teal) steps alternating,
+  // with a feedback edge back to the LLM when there's no confident match.
+  private readonly hiwGraph = `flowchart LR
+  N["Clinical note"] --> L["LLM<br/>extract + English term"]
+  L --> S1["Snowstorm<br/>search SNOMED CT"]
+  S1 --> S2["Snowstorm<br/>confirm synonyms"]
+  S2 --> A["Local<br/>accept / escalate"]
+  A --> C["SNOMED CT concept"]
+  A -. "no match:<br/>broader / synonym" .-> L
+  classDef llm fill:#ede7f6,stroke:#b39ddb,color:#5e35b1;
+  classDef snow fill:#e0f2f1,stroke:#80cbc4,color:#00796b;
+  classDef local fill:#eceff1,stroke:#b0bec5,color:#546e7a;
+  classDef neutral fill:#ffffff,stroke:#cfd8e3,color:#003865;
+  class L llm;
+  class S1,S2 snow;
+  class A local;
+  class N,C neutral;`;
 
   clinicalText = "An 80-year-old woman was admitted with pancytopenia. Five weeks earlier, nausea, vomiting, diarrhea, chills, and no fever had developed. CT revealed bilateral pelvic masses; examination of a peripheral-blood smear revealed schistocytes, anisocytosis, and a low platelet count. ";
   nlpResult = "";
@@ -33,9 +55,39 @@ export class NlpFunctionComponent implements OnInit {
     { code: '24484000', display: 'Severe'}
   ];
 
-  constructor(private terminologyService: TerminologyService, private openaiService: OpenaiService, public dialog: MatDialog) { }
+  constructor(private terminologyService: TerminologyService, private openaiService: OpenaiService, public dialog: MatDialog, public tuning: TuningService) { }
 
   ngOnInit(): void {
+  }
+
+  /** Open the algorithm-tuning dialog (edits the shared TuningService). */
+  openTuning(): void {
+    this.dialog.open(AlgorithmTuningDialogComponent, { width: '460px', maxWidth: '92vw' });
+  }
+
+  /** Editing the note invalidates the previous run: hide results and status. */
+  onClinicalTextChange(): void {
+    this.nlpResult = '';
+    this.entities = [];
+    this.status = '';
+  }
+
+  /** Render the "How it works" Mermaid diagram the first time it's opened.
+   * Mermaid is imported dynamically so it stays out of the main bundle. */
+  async renderDiagram(ev: Event): Promise<void> {
+    const details = ev.target as HTMLDetailsElement;
+    if (!details?.open || this.diagramRendered || !this.mermaidHost) {
+      return;
+    }
+    this.diagramRendered = true;
+    try {
+      const mermaid = (await import('mermaid')).default;
+      mermaid.initialize({ startOnLoad: false, theme: 'neutral', securityLevel: 'strict', flowchart: { useMaxWidth: true, htmlLabels: true } });
+      const { svg } = await mermaid.render('hiwGraph', this.hiwGraph);
+      this.mermaidHost.nativeElement.innerHTML = svg;
+    } catch {
+      this.diagramRendered = false; // allow a retry on next open
+    }
   }
 
   /** Open the per-entity flow diagram (works for matched and unmatched). */
@@ -91,7 +143,11 @@ export class NlpFunctionComponent implements OnInit {
     };
     const message = `Extract clinical terms and assign SNOMED CT codes to this text: ${this.clinicalText}\n`;
     const completion = await this.openaiService.extract([systemPrompt, {role: "user", content: message}], schema, { maxCompletionTokens: 10000 });
-    this.entities = completion.parsed?.terms ?? [];
+    // Clone the extracted terms so each run starts from fresh entity objects.
+    // Matching mutates entities (text/type/snomed/trace); without cloning, a
+    // re-run would reuse the cached extraction's already-matched objects and
+    // skip the cascade — ignoring any tuning change — and pollute the LLM cache.
+    this.entities = structuredClone(completion.parsed?.terms ?? []);
     this.entities.forEach((entity: any) => {
       // Defensively trim surrounding punctuation/whitespace the model sometimes
       // includes in the verbatim span (e.g. "nausea," / "pancytopenia.").
@@ -181,8 +237,8 @@ export class NlpFunctionComponent implements OnInit {
       count++;
       this.status = `Phase 2/3 · Matching with SNOMED CT (${count} of ${entities.length})…`;
       const { ecl, label } = this.terminologyService.eclForType(entity.type);
-      const DISTANCE_THRESHOLD = 50;
-      const COVERAGE_MIN = 0.5;
+      const DISTANCE_THRESHOLD = this.tuning.distanceMax;
+      const COVERAGE_MIN = this.tuning.coverageMin;
       let considered: any = null; // best candidate seen across passes (by rank)
       let lastLookup: any = null; // synonym $lookup done in the last consider(), for the trace
 
@@ -205,7 +261,7 @@ export class NlpFunctionComponent implements OnInit {
         // a SYNONYM. If low PT coverage is the only thing holding back an
         // otherwise-close candidate, look up the concept's synonyms and
         // re-score coverage against the best-matching term.
-        if (!top.exact && (top.coverage ?? 0) < COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD) {
+        if (this.tuning.enableSynonymLookup && !top.exact && (top.coverage ?? 0) < COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD) {
           const terms = await this.terminologyService.conceptTerms(top.code).toPromise();
           const qTokens = this.tokenize(queryTerm);
           for (const t of terms || []) {
@@ -340,7 +396,7 @@ export class NlpFunctionComponent implements OnInit {
       // produced (e.g. "bilateral pelvic masses" → "mass"), for when the
       // specific phrasing is absent from the terminology. Also free (from the
       // initial extraction), so no extra LLM round-trip.
-      if (!entity.snomed) {
+      if (!entity.snomed && this.tuning.enableGeneralTerm) {
         const general = (entity.generalTerm || '').trim();
         const usable = !!general
           && general.toLowerCase() !== queryTerm.toLowerCase()
@@ -369,7 +425,7 @@ export class NlpFunctionComponent implements OnInit {
 
       // Pass 5 — FUZZY search (Snowstorm `~`): last resort for typos / spelling
       // variants, using the most reduced term we have.
-      if (!entity.snomed) {
+      if (!entity.snomed && this.tuning.enableFuzzy) {
         candidates = await this.searchCandidates(queryTerm, entity.type, true);
         accepted = await consider(candidates);
         entity.trace.steps.push({
@@ -380,6 +436,25 @@ export class NlpFunctionComponent implements OnInit {
           data: { ecl, queryTerm: `${queryTerm}~`, candidates }
         });
         pushLookupStep();
+      }
+
+      // Pass 6 — PREFIX search (opt-in, off by default): last resort using the
+      // first 3 letters of each word as the server filter, still scored against
+      // the real term. Broadens recall for stubborn cases.
+      if (!entity.snomed && this.tuning.enablePrefixSearch) {
+        const prefix = this.prefixTerm(queryTerm);
+        if (prefix && prefix !== queryTerm.toLowerCase()) {
+          candidates = await this.searchCandidates(queryTerm, entity.type, false, prefix);
+          accepted = await consider(candidates);
+          entity.trace.steps.push({
+            stage: 'search',
+            status: searchStatus(candidates, accepted),
+            title: 'Prefix search',
+            detail: `${label} · prefix "${prefix}" (for "${queryTerm}") → ${candidates.length} candidate(s)`,
+            data: { ecl, queryTerm: prefix, candidates }
+          });
+          pushLookupStep();
+        }
       }
 
       entity.trace.steps.push({
@@ -449,9 +524,12 @@ export class NlpFunctionComponent implements OnInit {
    * Query Snowstorm for a term and score every candidate for the trace.
    * With `fuzzy`, appends Snowstorm's `~` operator to tolerate typos/variants.
    */
-  private async searchCandidates(term: string, type: string, fuzzy: boolean = false): Promise<TraceCandidate[]> {
-    const filter = fuzzy ? `${term}~` : term;
-    const response = await this.terminologyService.matchText(filter, type).toPromise();
+  private async searchCandidates(term: string, type: string, fuzzy: boolean = false, filterOverride?: string): Promise<TraceCandidate[]> {
+    // `term` is what candidates are scored against (coverage/distance);
+    // `filterOverride` lets a pass send a different string to the server
+    // (e.g. word prefixes) while still scoring against the real term.
+    const filter = filterOverride ?? (fuzzy ? `${term}~` : term);
+    const response = await this.terminologyService.matchText(filter, type, this.tuning.candidateCount).toPromise();
     const queryTokens = this.tokenize(term);
     const queryNorm = this.normText(term);
     return (response?.expansion?.contains || []).map((c: any) => {
@@ -487,6 +565,11 @@ export class NlpFunctionComponent implements OnInit {
     const set = new Set(this.tokenize(display));
     const matched = queryTokens.filter(t => set.has(t)).length;
     return matched / queryTokens.length;
+  }
+
+  /** First 3 letters of each content token, as a broadening server filter. */
+  private prefixTerm(term: string): string {
+    return this.tokenize(term).map(t => t.slice(0, 3)).join(' ');
   }
 
   /**

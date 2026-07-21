@@ -44,6 +44,9 @@ import { MatChipsModule } from '@angular/material/chips';
 import { AiWarningDialogComponent } from './ai-warning-dialog/ai-warning-dialog.component';
 import { NlpFunctionComponent } from './nlp-function/nlp-function.component';
 import { EntityTraceDialogComponent } from './entity-trace-dialog/entity-trace-dialog.component';
+import { AlgorithmTuningDialogComponent } from './algorithm-tuning-dialog/algorithm-tuning-dialog.component';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatBadgeModule } from '@angular/material/badge';
 import { MarkdownModule } from 'ngx-markdown';
 import { MarkdownPipe } from './pipes/markdown.pipe';
 import { YouTubePlayerModule } from '@angular/youtube-player';
@@ -68,6 +71,7 @@ import { YouTubePlayerModule } from '@angular/youtube-player';
         AiWarningDialogComponent,
         NlpFunctionComponent,
         EntityTraceDialogComponent,
+        AlgorithmTuningDialogComponent,
         MarkdownPipe
     ],
     bootstrap: [AppComponent], imports: [BrowserModule,
@@ -95,6 +99,8 @@ import { YouTubePlayerModule } from '@angular/youtube-player';
         MatRadioModule,
         MatTableModule,
         MatChipsModule,
+        MatSlideToggleModule,
+        MatBadgeModule,
         MarkdownModule.forRoot(),
         YouTubePlayerModule], providers: [provideHttpClient(withInterceptorsFromDi())] })
 export class AppModule { }

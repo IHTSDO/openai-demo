@@ -112,3 +112,16 @@
 .methodology p {
   margin: 10px 0;
 }
+
+/* "How it works" Mermaid diagram (rendered on first open). */
+.mermaid-host {
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.mermaid-host svg {
+  max-width: 100%;
+  height: auto;
+}
+.hiw-caption {
+  color: #55616e;
+}

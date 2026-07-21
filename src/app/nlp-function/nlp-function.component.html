@@ -12,13 +12,19 @@
     <section class="input-section">
       <mat-form-field appearance="outline" class="example-full-width">
         <mat-label>Clinical text</mat-label>
-        <textarea matInput placeholder="Paste a clinical note…" rows="5" [(ngModel)]="clinicalText"></textarea>
+        <textarea matInput placeholder="Paste a clinical note…" rows="5" [(ngModel)]="clinicalText" [readonly]="loadingNlp" (input)="onClinicalTextChange()"></textarea>
       </mat-form-field>
 
       <div class="actions">
         <button mat-flat-button color="primary" (click)="runNlp()" [disabled]="loadingNlp">
           <mat-icon>auto_awesome</mat-icon>
           Process
+        </button>
+        <button mat-stroked-button (click)="openTuning()" [disabled]="loadingNlp"
+                [matBadge]="tuning.changedCount" [matBadgeHidden]="!tuning.changedCount"
+                matBadgeColor="accent" matBadgeSize="small" matTooltip="Algorithm tuning">
+          <mat-icon>tune</mat-icon>
+          Tuning
         </button>
         <mat-spinner diameter="22" *ngIf="loadingNlp"></mat-spinner>
         <span class="status"
@@ -77,15 +83,27 @@
       </table>
     </section>
 
-    <details class="methodology">
+    <details class="methodology" (toggle)="renderDiagram($event)">
       <summary>How it works</summary>
       <p>
-        This web demo uses a simplified version of the clinical entity extraction algorithm described in
-        <a href="https://github.com/IHTSDO/llm-chain-entity-extraction" target="_blank" rel="noopener">IHTSDO/llm-chain-entity-extraction</a>.
+        The demo alternates two systems: the <strong>LLM</strong> handles language and meaning
+        (reading the note, translating and normalizing each term, flagging negation), while the
+        <strong>SNOMED&nbsp;CT terminology server</strong> (Snowstorm) finds and confirms the concept.
+        That back-and-forth is the core idea.
       </p>
+
+      <div class="mermaid-host" #mermaidHost></div>
+
+      <p class="hiw-caption">
+        No confident match? The LLM offers a broader or alternative term and Snowstorm searches again
+        — LLM&nbsp;↔&nbsp;Snowstorm — until a concept is accepted or the entity is left unresolved.
+        Open any row's <strong>Flow</strong> to see the exact steps for an entity.
+      </p>
+
       <p>
-        <a href="assets/AI-Chains-ePoster-Expo-2023.pdf" target="_blank" rel="noopener">Download the poster</a>
-        describing this experience from the 2023 SNOMED Expo.
+        A simplified re-implementation inspired by
+        <a href="https://github.com/IHTSDO/llm-chain-entity-extraction" target="_blank" rel="noopener">IHTSDO/llm-chain-entity-extraction</a>;
+        see the <a href="assets/AI-Chains-ePoster-Expo-2023.pdf" target="_blank" rel="noopener">2023 SNOMED Expo poster</a>.
       </p>
     </details>
   </mat-card-content>

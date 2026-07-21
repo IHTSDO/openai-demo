@@ -1,0 +1,53 @@
+<h2 mat-dialog-title>Algorithm tuning</h2>
+
+<mat-dialog-content>
+  <p class="tune-hint">
+    Tune the terminology-matching cascade. Changes apply to the next run.
+    <span class="tune-changed-count" *ngIf="tuning.changedCount">· {{ tuning.changedCount }} changed from default</span>
+  </p>
+
+  <mat-form-field appearance="outline" class="tune-field" subscriptSizing="dynamic">
+    <mat-label>Token coverage threshold</mat-label>
+    <input matInput type="number" min="0" max="1" step="0.05" [(ngModel)]="tuning.coverageMin">
+    <mat-icon matSuffix class="tune-changed" *ngIf="tuning.isChanged('coverageMin')" title="Changed from default (0.5)">edit</mat-icon>
+    <mat-hint>0–1 · min query-token coverage (default 0.5)</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="tune-field" subscriptSizing="dynamic">
+    <mat-label>Edit-distance threshold</mat-label>
+    <input matInput type="number" min="0" max="200" step="1" [(ngModel)]="tuning.distanceMax">
+    <mat-icon matSuffix class="tune-changed" *ngIf="tuning.isChanged('distanceMax')" title="Changed from default (50)">edit</mat-icon>
+    <mat-hint>Max edit distance (default 50)</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="tune-field" subscriptSizing="dynamic">
+    <mat-label>Candidates per search</mat-label>
+    <input matInput type="number" min="1" max="50" step="1" [(ngModel)]="tuning.candidateCount">
+    <mat-icon matSuffix class="tune-changed" *ngIf="tuning.isChanged('candidateCount')" title="Changed from default (5)">edit</mat-icon>
+    <mat-hint>Concepts per SNOMED CT search (default 5)</mat-hint>
+  </mat-form-field>
+
+  <div class="tune-toggles">
+    <div class="tune-toggle-row">
+      <mat-slide-toggle [(ngModel)]="tuning.enableSynonymLookup">Synonym $lookup rescue</mat-slide-toggle>
+      <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enableSynonymLookup')" title="Changed from default (on)">edit</mat-icon>
+    </div>
+    <div class="tune-toggle-row">
+      <mat-slide-toggle [(ngModel)]="tuning.enableGeneralTerm">General-term pass</mat-slide-toggle>
+      <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enableGeneralTerm')" title="Changed from default (on)">edit</mat-icon>
+    </div>
+    <div class="tune-toggle-row">
+      <mat-slide-toggle [(ngModel)]="tuning.enableFuzzy">Fuzzy (~) pass</mat-slide-toggle>
+      <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enableFuzzy')" title="Changed from default (on)">edit</mat-icon>
+    </div>
+    <div class="tune-toggle-row">
+      <mat-slide-toggle [(ngModel)]="tuning.enablePrefixSearch">Prefix search (first 3 letters/word)</mat-slide-toggle>
+      <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enablePrefixSearch')" title="Changed from default (off)">edit</mat-icon>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="reset()" [disabled]="!tuning.changedCount">Reset to defaults</button>
+  <button mat-flat-button color="primary" (click)="done()">Done</button>
+</mat-dialog-actions>

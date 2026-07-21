@@ -23,6 +23,7 @@
     "@angular/youtube-player": "^20.2.14",
     "file-saver": "^2.0.5",
     "marked": "^16.4.2",
+    "mermaid": "^11.16.0",
     "ngx-cookie-service": "^20.1.1",
     "ngx-markdown": "^20.1.0",
     "ngx-webstorage-service": "^5.0.0",
@@ -47,6 +48,7 @@
     "karma-coverage": "~2.2.1",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
+    "type-fest": "^5.8.0",
     "typescript": "~5.8.3"
   }
 }

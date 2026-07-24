@@ -415,6 +415,26 @@ export class NlpFunctionComponent implements OnInit {
       // good specific concept.
       tryAccept();
 
+      // Guardrail for the BROAD fallback passes: a broadened query ("inflammation",
+      // "diagnostic test") can pull in a high-coverage but unrelated concept
+      // ("Anal inflammation" for a throat exam). Only let a broad-pass candidate
+      // through if it still shares a content token with the specific clinical
+      // intent, so the fallback can widen recall without wandering off-topic.
+      const anchorTokens = this.tokenize(entity.clinicalTerm || entity.text);
+      // Two tokens are "related" if they share a >=4-char stem prefix, so
+      // morphological variants count (respiration/respiratory,
+      // radiography/radiographic) but unrelated words (anal/pharyngeal) don't.
+      const sharesStem = (a: string, b: string): boolean => {
+        const n = Math.min(a.length, b.length);
+        return n >= 4 && a.slice(0, 4) === b.slice(0, 4);
+      };
+      const related = (cands: TraceCandidate[]): TraceCandidate[] =>
+        !anchorTokens.length ? cands
+          : cands.filter(c => {
+              const dt = this.tokenize(this.removeSemtag(c.display));
+              return c.exact || anchorTokens.some(a => dt.some(d => sharesStem(a, d)));
+            });
+
       // Pass 4 — GENERAL TERM from the extraction: a broader form the LLM
       // produced (e.g. "bilateral pelvic masses" → "mass"), for when the
       // specific phrasing is absent from the terminology. Only a fallback when
@@ -433,7 +453,7 @@ export class NlpFunctionComponent implements OnInit {
         });
         if (usable) {
           queryTerm = general;
-          candidates = await this.searchCandidates(queryTerm, entity.type);
+          candidates = related(await this.searchCandidates(queryTerm, entity.type));
           accepted = await consider(candidates);
           entity.trace.steps.push({
             stage: 'search',
@@ -452,7 +472,7 @@ export class NlpFunctionComponent implements OnInit {
       // Pass 5 — FUZZY search (Snowstorm `~`): last resort for typos / spelling
       // variants, using the most reduced term we have.
       if (!entity.snomed && this.tuning.enableFuzzy) {
-        candidates = await this.searchCandidates(queryTerm, entity.type, true);
+        candidates = related(await this.searchCandidates(queryTerm, entity.type, true));
         accepted = await consider(candidates);
         entity.trace.steps.push({
           stage: 'search',
@@ -471,7 +491,7 @@ export class NlpFunctionComponent implements OnInit {
       if (!entity.snomed && this.tuning.enablePrefixSearch) {
         const prefix = this.prefixTerm(queryTerm);
         if (prefix && prefix !== queryTerm.toLowerCase()) {
-          candidates = await this.searchCandidates(queryTerm, entity.type, false, prefix);
+          candidates = related(await this.searchCandidates(queryTerm, entity.type, false, prefix));
           accepted = await consider(candidates);
           entity.trace.steps.push({
             stage: 'search',

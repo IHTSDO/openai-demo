@@ -87,17 +87,20 @@
       <summary>How it works</summary>
       <p>
         The demo alternates two systems: the <strong>LLM</strong> handles language and meaning
-        (reading the note, translating and normalizing each term, flagging negation), while the
-        <strong>SNOMED&nbsp;CT terminology server</strong> (Snowstorm) finds and confirms the concept.
-        That back-and-forth is the core idea.
+        (reading the note, extracting diagnoses, findings, procedures and medications — not raw
+        vital-sign or lab values — normalizing each term and flagging negation), while the
+        <strong>SNOMED&nbsp;CT terminology server</strong> (Snowstorm) finds the concept, which we
+        then <strong>rank and score locally</strong>. That back-and-forth is the core idea.
       </p>
 
       <div class="mermaid-host" #mermaidHost></div>
 
       <p class="hiw-caption">
         No confident match? The LLM offers a broader or alternative term and Snowstorm searches again
-        — LLM&nbsp;↔&nbsp;Snowstorm — until a concept is accepted or the entity is left unresolved.
-        Open any row's <strong>Flow</strong> to see the exact steps for an entity.
+        — LLM&nbsp;↔&nbsp;Snowstorm. Finally, a second <strong>LLM review</strong> double-checks the
+        uncertain matches and rejects a concept that is more specific or off-topic than the note states,
+        leaving the entity unresolved rather than mis-coded. Open any row's <strong>Flow</strong> to see
+        the exact steps for an entity.
       </p>
 
       <p>

@@ -26,20 +26,22 @@ export class NlpFunctionComponent implements OnInit {
   // "How it works" flow: LLM (purple) and Snowstorm (teal) steps alternating,
   // with a feedback edge back to the LLM when there's no confident match.
   private readonly hiwGraph = `flowchart LR
-  N["Clinical note"] --> L["LLM<br/>extract + English term"]
+  N["Clinical note"] --> L["LLM<br/>extract dx / findings /<br/>procedures / meds"]
   L --> S1["Snowstorm<br/>search SNOMED CT"]
   S1 --> S2["Snowstorm<br/>confirm synonyms"]
-  S2 --> A["Local<br/>accept / escalate"]
-  A --> C["SNOMED CT concept"]
-  A -. "no match:<br/>broader / synonym" .-> L
+  S2 --> A["Local<br/>rank and score"]
+  A -. "no confident match:<br/>broader / synonym" .-> L
+  A --> R["LLM review<br/>uncertain matches"]
+  R --> C["SNOMED CT concept"]
+  R -. "no faithful<br/>concept" .-> U["Unresolved"]
   classDef llm fill:#ede7f6,stroke:#b39ddb,color:#5e35b1;
   classDef snow fill:#e0f2f1,stroke:#80cbc4,color:#00796b;
   classDef local fill:#eceff1,stroke:#b0bec5,color:#546e7a;
   classDef neutral fill:#ffffff,stroke:#cfd8e3,color:#003865;
-  class L llm;
+  class L,R llm;
   class S1,S2 snow;
   class A local;
-  class N,C neutral;`;
+  class N,C,U neutral;`;
 
   clinicalText = "An 80-year-old woman was admitted with pancytopenia. Five weeks earlier, nausea, vomiting, diarrhea, chills, and no fever had developed. CT revealed bilateral pelvic masses; examination of a peripheral-blood smear revealed schistocytes, anisocytosis, and a low platelet count. ";
   nlpResult = "";

@@ -206,7 +206,14 @@ export class NlpFunctionComponent implements OnInit {
     });
     this.status = `Phase 2/3 · Found ${this.entities.length} entities — matching with SNOMED CT…`;
     await this.matchWithSnomed(this.entities);
-    // Phase 3: post-process the matched entities.
+    // Phase 3: optional LLM re-rank — one batched call that lets the model pick
+    // the best candidate per entity, or reject them all (null), so an
+    // over-specific / off-topic / opposite-polarity candidate is not forced.
+    let rerankCost = '';
+    if (this.tuning.enableLlmRerank) {
+      this.status = 'Phase 3/3 · Reviewing candidates with the LLM…';
+      rerankCost = await this.reRankWithLlm(this.entities);
+    }
     this.status = 'Phase 3/3 · Finalizing results…';
     // Keep unmatched entities too: entities the LLM detected but that could not
     // be resolved on the terminology server stay visible (dotted highlight),
@@ -219,7 +226,7 @@ export class NlpFunctionComponent implements OnInit {
     this.nlpResult = JSON.stringify(this.entities, null, 2);
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
     const costPart = completion.cached ? 'Using AI cache · $0.00' : `Cost: $${completion.cost}`;
-    this.status = `Done in ${elapsed}s · ${matchedCount}/${this.entities.length} entities matched to SNOMED CT · ${costPart} · ${this.openaiService.getModel()}`;
+    this.status = `Done in ${elapsed}s · ${matchedCount}/${this.entities.length} entities matched to SNOMED CT · ${costPart}${rerankCost} · ${this.openaiService.getModel()}`;
     // const functionPrompt = {role: "function", name: functionName, content: JSON.stringify(this.entities)};
     // const completion2 = await this.openaiService.completion(
     //   [
@@ -588,6 +595,159 @@ export class NlpFunctionComponent implements OnInit {
           : { reason: entity.snomed.expression }
       });
     });
+  }
+
+  /**
+   * Phase 3 — LLM re-rank. The deterministic cascade proposes a concept per
+   * entity, but it is forced to pick from whatever the server returned. Here a
+   * single batched LLM call reviews the candidate list for every entity and
+   * either picks the faithful concept OR returns null ("none of these"), so an
+   * over-specific, off-topic or opposite-polarity candidate is rejected to a
+   * clean unmatched rather than accepted. The LLM can only choose among the
+   * candidates we retrieved — it cannot fix a recall miss.
+   * Returns a status fragment describing the extra cost (or '').
+   */
+  private async reRankWithLlm(entities: any[]): Promise<string> {
+    // Build a compact candidate pool per entity from the trace's search steps
+    // (all passes, deduped by code, best-scored first).
+    const rank = (a: TraceCandidate, b: TraceCandidate): number =>
+      (+!!b.exact) - (+!!a.exact)
+      || (+!!a.polarityBad) - (+!!b.polarityBad)
+      || (b.coverage ?? 0) - (a.coverage ?? 0)
+      || (a.extra ?? 0) - (b.extra ?? 0)
+      || (a.distance ?? 0) - (b.distance ?? 0);
+
+    // Confidence gate: only send SUSPICIOUS matches to the LLM. A deterministic
+    // match is trusted (skipped) when its chosen concept is exact or adds few
+    // extra qualifier tokens; it is reviewed only when the chosen concept piles
+    // on unstated qualifiers (high `extra`) — the over-specific / off-topic
+    // class (e.g. "recent travel" → "DVT due to air travel", extra 7). This
+    // preserves clean generics (hypertension → "Hypertensive disorder", extra 1)
+    // without exposing them to the LLM's occasional over-abstention.
+    const EXTRA_REVIEW_THRESHOLD = 3;
+    let skipped = 0;
+    const jobs: { entity: any; candidates: TraceCandidate[] }[] = [];
+    for (const entity of entities) {
+      const pool = new Map<string, TraceCandidate>();
+      for (const step of (entity.trace?.steps ?? [])) {
+        for (const c of (step.data?.candidates ?? [])) {
+          if (!c?.code) { continue; }
+          const cur = pool.get(c.code);
+          if (!cur || rank(c, cur) < 0) { pool.set(c.code, c); }
+        }
+      }
+      const candidates = [...pool.values()].sort(rank).slice(0, 8);
+      if (!candidates.length) { continue; }
+      const chosen = entity.matched && entity.snomed?.code ? pool.get(entity.snomed.code) : null;
+      const suspicious = !!chosen && !chosen.exact && (chosen.extra ?? 0) >= EXTRA_REVIEW_THRESHOLD;
+      if (suspicious) { jobs.push({ entity, candidates }); } else { skipped++; }
+    }
+    if (!jobs.length) { return ''; }
+
+    const systemPrompt = {
+      role: 'system',
+      content: `You are a clinical coder assigning SNOMED CT codes to findings extracted from a note. These codes are not shown to a reader — they feed downstream systems: population analytics and quality measures, cohort selection, and clinical decision support (CDS) rules that trigger on coded findings. Keep that use in mind, because two OPPOSITE mistakes both damage those systems:
+• A needless null makes the finding INVISIBLE — the patient's hypertension, allergy, or weight gain vanishes from every query, quality measure, and CDS rule. Reserve null for when every candidate would be MISLEADING.
+• A code MORE SPECIFIC than the note states injects FALSE detail — analytics and CDS would treat the patient as having a subtype, cause, site, or syndrome that was never documented.
+
+So the safe and useful choice is a code that is EQUIVALENT to the mention or slightly MORE GENERAL: it keeps the finding visible and asserts nothing false. Coding more generally loses detail but is correct; coding more specifically is wrong.
+
+You are given, per mention, the candidate concepts a search returned and "proposedCode" (the concept our system selected, or null). "chosenCode" MUST be one of the candidate codes, or null — you are picking from the candidates provided, NOT naming an ideal concept.
+
+Decision procedure:
+1. Is proposedCode's concept EQUIVALENT to or MORE GENERAL than the mention? Clinical rewordings count as equivalent — "high blood pressure" ≡ "Hypertensive disorder"; "allergy" ⊆ the broader "Allergic disposition"; "low platelet count" ≡ "Thrombocytopenic disorder"; "shortness of breath" ≡ "Dyspnea". If yes → chosenCode = proposedCode. Do NOT return null because a better-named concept is missing from the candidate list — the broader concept present IS the right code.
+2. Otherwise, if another candidate is equivalent-or-more-general (prefer equivalent over broader), return its code.
+3. Return null ONLY when EVERY candidate is MORE SPECIFIC than the mention (adds an unstated site/cause/severity/subtype/risk-status — "recent travel" vs "deep vein thrombosis due to recent air travel"; "occupational exposure" vs "effects of occupational exposure to radiation"; "low platelet count" vs "HELLP syndrome"; "venous thromboembolism" vs "at low risk of venous thromboembolism"), denotes a DIFFERENT concept, or is the OPPOSITE meaning ("clear breath sounds" vs "harsh breath sounds").
+
+Ignore polarity/negation: "context" records absence separately, so always keep the POSITIVE concept ("no fever" → "Fever"). Give a one-line rationale for each decision.`
+    };
+    const payload = jobs.map((j, i) => ({
+      index: i,
+      mention: j.entity.text,
+      context: j.entity.context,
+      suggestedTerm: j.entity.clinicalTerm,
+      proposedCode: j.entity.matched ? (j.entity.snomed?.code ?? null) : null,
+      candidates: j.candidates.map(c => ({ code: c.code, term: c.display }))
+    }));
+    const schema = {
+      name: 'concept_selection',
+      schema: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          decisions: {
+            type: 'array',
+            description: 'One decision per input index.',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              properties: {
+                index: { type: 'integer', description: 'The index of the mention being decided.' },
+                chosenCode: { type: ['string', 'null'], description: 'The code of the chosen candidate, or null if none is a faithful match.' },
+                rationale: { type: 'string', description: 'One-line justification for the choice or for rejecting all candidates.' }
+              },
+              required: ['index', 'chosenCode', 'rationale']
+            }
+          }
+        },
+        required: ['decisions']
+      }
+    };
+
+    let result: any;
+    try {
+      result = await this.openaiService.extract(
+        [systemPrompt, { role: 'user', content: JSON.stringify(payload) }],
+        schema,
+        { maxCompletionTokens: 6000 }
+      );
+    } catch (err: any) {
+      // Non-fatal: keep the deterministic results if the review call fails.
+      console.warn('LLM re-rank failed, keeping deterministic matches:', err?.message);
+      return '';
+    }
+
+    for (const d of (result.parsed?.decisions ?? [])) {
+      const job = jobs[d.index];
+      if (!job) { continue; }
+      const entity = job.entity;
+      const chosen = d.chosenCode ? job.candidates.find(c => c.code === d.chosenCode) : null;
+      const before = entity.matched ? entity.snomed?.display : '∅';
+      if (chosen) {
+        entity.snomed = { code: chosen.code, display: chosen.display };
+        entity.matched = true;
+        chosen.chosen = true;
+      } else {
+        entity.snomed = { expression: 'No faithful candidate (LLM review)' };
+        entity.matched = false;
+      }
+      const after = entity.matched ? entity.snomed.display : '∅';
+      const changed = before !== after;
+      // Insert the review step just before the final 'result' step and refresh
+      // that result step to reflect the LLM's decision.
+      const steps = entity.trace?.steps ?? [];
+      const reviewStep = {
+        stage: 'score' as const,
+        status: (entity.matched ? 'ok' : 'warn') as 'ok' | 'warn',
+        title: 'LLM review',
+        detail: `${chosen ? `kept/chose "${after}"` : 'no faithful candidate → unmatched'}${changed ? ` (was "${before}")` : ''} · ${d.rationale}`,
+        data: { chosenCode: d.chosenCode ?? null, rationale: d.rationale, changed }
+      };
+      const resultIdx = steps.length && steps[steps.length - 1].stage === 'result' ? steps.length - 1 : steps.length;
+      steps.splice(resultIdx, 0, reviewStep);
+      entity.trace.matched = entity.matched;
+      const resultStep = steps[steps.length - 1];
+      if (resultStep && resultStep.stage === 'result') {
+        resultStep.status = entity.matched ? 'ok' : 'fail';
+        resultStep.title = entity.matched ? 'Matched to SNOMED CT' : 'Unresolved';
+        resultStep.detail = entity.matched ? `${entity.snomed.code} | ${entity.snomed.display}` : entity.snomed.expression;
+        resultStep.data = entity.matched
+          ? { code: entity.snomed.code, display: entity.snomed.display }
+          : { reason: entity.snomed.expression };
+      }
+    }
+    const costTag = result.cached ? 'review cached' : `review $${result.cost}`;
+    return ` (+ ${costTag}, ${jobs.length} reviewed)`;
   }
 
   /**

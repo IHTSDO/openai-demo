@@ -44,6 +44,10 @@
       <mat-slide-toggle [(ngModel)]="tuning.enablePrefixSearch">Prefix search (first 3 letters/word)</mat-slide-toggle>
       <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enablePrefixSearch')" title="Changed from default (off)">edit</mat-icon>
     </div>
+    <div class="tune-toggle-row">
+      <mat-slide-toggle [(ngModel)]="tuning.enableLlmRerank">LLM review (2nd call: pick best candidate or reject all)</mat-slide-toggle>
+      <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enableLlmRerank')" title="Changed from default (on)">edit</mat-icon>
+    </div>
   </div>
 </mat-dialog-content>
 

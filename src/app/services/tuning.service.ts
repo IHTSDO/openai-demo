@@ -16,6 +16,7 @@ export class TuningService {
     enableGeneralTerm: true,   // broader "general term" pass
     enableFuzzy: true,         // fuzzy (~) fallback pass
     enablePrefixSearch: false, // last-resort prefix pass (first 3 letters/word), off by default
+    enableLlmRerank: true,     // 2nd LLM call: pick the best candidate per entity, or reject all (null)
   };
 
   coverageMin = TuningService.DEFAULTS.coverageMin;
@@ -25,6 +26,7 @@ export class TuningService {
   enableGeneralTerm = TuningService.DEFAULTS.enableGeneralTerm;
   enableFuzzy = TuningService.DEFAULTS.enableFuzzy;
   enablePrefixSearch = TuningService.DEFAULTS.enablePrefixSearch;
+  enableLlmRerank = TuningService.DEFAULTS.enableLlmRerank;
 
   constructor() {
     this.load();
@@ -61,7 +63,7 @@ export class TuningService {
   }
 
   private snapshot() {
-    const { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy } = this;
-    return { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy };
+    const { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy, enablePrefixSearch, enableLlmRerank } = this;
+    return { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy, enablePrefixSearch, enableLlmRerank };
   }
 }

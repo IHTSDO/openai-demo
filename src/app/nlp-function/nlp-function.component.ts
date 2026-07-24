@@ -14,6 +14,11 @@ import { TuningService } from '../services/tuning.service';
     standalone: false
 })
 export class NlpFunctionComponent implements OnInit {
+  /** Absence/negation words that flip a concept's polarity when the query lacks them. */
+  private static readonly NEG_WORDS = new Set([
+    'no', 'not', 'without', 'absent', 'absence', 'negative', 'denies', 'none', 'unremarkable'
+  ]);
+
   @Input() apiKey: string = "";
 
   @ViewChild('mermaidHost') mermaidHost?: ElementRef<HTMLElement>;
@@ -193,6 +198,11 @@ export class NlpFunctionComponent implements OnInit {
       }
       if (!entity.fsn?.length) { entity.fsn = entity.text; }
       if (!entity.singularFsn) { entity.singularFsn = entity.fsn; }
+      // Strip parenthetical alternatives/brands the model sometimes adds to the
+      // search terms (e.g. "albuterol (salbutamol) inhaler"), which break the
+      // terminology filter. Keep the terms as single clean phrases.
+      if (entity.clinicalTerm) { entity.clinicalTerm = this.stripParens(entity.clinicalTerm); }
+      if (entity.generalTerm) { entity.generalTerm = this.stripParens(entity.generalTerm); }
     });
     this.status = `Phase 2/3 · Found ${this.entities.length} entities — matching with SNOMED CT…`;
     await this.matchWithSnomed(this.entities);
@@ -240,6 +250,7 @@ export class NlpFunctionComponent implements OnInit {
       const DISTANCE_THRESHOLD = this.tuning.distanceMax;
       const COVERAGE_MIN = this.tuning.coverageMin;
       let considered: any = null; // best candidate seen across passes (by rank)
+      let exactFound = false;     // stop escalating the reformulation passes once we hit an exact match
       let lastLookup: any = null; // synonym $lookup done in the last consider(), for the trace
 
       // Rank candidates by *our* criteria — exact normalized match, then query
@@ -250,7 +261,9 @@ export class NlpFunctionComponent implements OnInit {
       const rankBetter = (a: any, b: any): boolean =>
         !b ? true
           : (!!a.exact !== !!b.exact) ? !!a.exact
+          : (!!a.polarityBad !== !!b.polarityBad) ? !a.polarityBad
           : ((a.coverage ?? 0) !== (b.coverage ?? 0)) ? (a.coverage ?? 0) > (b.coverage ?? 0)
+          : ((a.extra ?? 0) !== (b.extra ?? 0)) ? (a.extra ?? 0) < (b.extra ?? 0)
           : a.distance < b.distance;
       const consider = async (cands: TraceCandidate[]): Promise<boolean> => {
         lastLookup = null;
@@ -286,18 +299,23 @@ export class NlpFunctionComponent implements OnInit {
         if (rankBetter(top, considered)) {
           considered = top;
         }
-        // Confidence guardrail: accept only an exact match, or one with enough
-        // query-token coverage AND a sane edit distance.
-        const confident = !!top.exact || ((top.coverage ?? 0) >= COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD);
-        if (!entity.snomed && confident) {
-          entity.snomed = { code: top.code, display: top.display };
-          top.chosen = true;
-          return true;
-        }
-        return false;
+        if (top.exact) { exactFound = true; }
+        // Whether THIS pass produced a confident candidate (only for step status).
+        return !!top.exact || (!top.polarityBad && (top.coverage ?? 0) >= COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD);
       };
       const searchStatus = (cands: TraceCandidate[], accepted: boolean) =>
         accepted ? 'ok' : (cands.length ? 'warn' : 'fail');
+      // Accept the best candidate seen so far if it clears the guardrail
+      // (exact, or enough coverage + sane distance). Deferred so a mediocre
+      // literal hit can't pre-empt an exact clinical-term match found later.
+      const tryAccept = () => {
+        if (entity.snomed || !considered) { return; }
+        const ok = !!considered.exact || (!considered.polarityBad && (considered.coverage ?? 0) >= COVERAGE_MIN && considered.distance < DISTANCE_THRESHOLD);
+        if (ok) {
+          entity.snomed = { code: considered.code, display: considered.display };
+          considered.chosen = true;
+        }
+      };
       // If the previous consider() ran a synonym $lookup, surface it as its own
       // (Snowstorm) step right after the search that triggered it.
       const pushLookupStep = () => {
@@ -334,7 +352,7 @@ export class NlpFunctionComponent implements OnInit {
       // Pass 2 — NORMALIZE by *removing* modifiers (laterality/severity) and
       // parenthetical qualifiers/semantic tags, then search. Skipped when
       // there is nothing to strip.
-      if (!entity.snomed) {
+      if (!exactFound) {
         const normalized = this.normalizeTerm(baseTerm);
         const changed = normalized !== baseTerm;
         entity.trace.steps.push({
@@ -364,7 +382,7 @@ export class NlpFunctionComponent implements OnInit {
       // "thrombocytopenia", correcting spelling too). This is a *semantic*
       // reformulation, tried before the purely lexical fuzzy fallback. No extra
       // LLM call — it came for free with the initial extraction.
-      if (!entity.snomed) {
+      if (!exactFound) {
         const clinical = (entity.clinicalTerm || '').trim();
         const usable = !!clinical
           && clinical.toLowerCase() !== queryTerm.toLowerCase()
@@ -392,10 +410,15 @@ export class NlpFunctionComponent implements OnInit {
         }
       }
 
+      // Accept the best specific match (literal / normalized / clinical term)
+      // BEFORE trying broader fallbacks, so a generic term can't override a
+      // good specific concept.
+      tryAccept();
+
       // Pass 4 — GENERAL TERM from the extraction: a broader form the LLM
       // produced (e.g. "bilateral pelvic masses" → "mass"), for when the
-      // specific phrasing is absent from the terminology. Also free (from the
-      // initial extraction), so no extra LLM round-trip.
+      // specific phrasing is absent from the terminology. Only a fallback when
+      // nothing specific was accepted. Free (from the initial extraction).
       if (!entity.snomed && this.tuning.enableGeneralTerm) {
         const general = (entity.generalTerm || '').trim();
         const usable = !!general
@@ -423,6 +446,9 @@ export class NlpFunctionComponent implements OnInit {
         }
       }
 
+      // Accept the best of the reformulation passes before the lexical fallbacks.
+      tryAccept();
+
       // Pass 5 — FUZZY search (Snowstorm `~`): last resort for typos / spelling
       // variants, using the most reduced term we have.
       if (!entity.snomed && this.tuning.enableFuzzy) {
@@ -436,6 +462,7 @@ export class NlpFunctionComponent implements OnInit {
           data: { ecl, queryTerm: `${queryTerm}~`, candidates }
         });
         pushLookupStep();
+        tryAccept();
       }
 
       // Pass 6 — PREFIX search (opt-in, off by default): last resort using the
@@ -454,6 +481,7 @@ export class NlpFunctionComponent implements OnInit {
             data: { ecl, queryTerm: prefix, candidates }
           });
           pushLookupStep();
+          tryAccept();
         }
       }
 
@@ -532,8 +560,14 @@ export class NlpFunctionComponent implements OnInit {
     const response = await this.terminologyService.matchText(filter, type, this.tuning.candidateCount).toPromise();
     const queryTokens = this.tokenize(term);
     const queryNorm = this.normText(term);
+    const queryWords = new Set(queryNorm.split(' '));
     return (response?.expansion?.contains || []).map((c: any) => {
       const clean = this.removeSemtag(c.display);
+      // Polarity flip: the candidate carries an absence/negation word the query
+      // does not (e.g. query "sputum production" → candidate "No sputum"). Such a
+      // concept contradicts the finding and must not be accepted over ∅.
+      const polarityBad = this.normText(clean).split(' ')
+        .some(w => NlpFunctionComponent.NEG_WORDS.has(w) && !queryWords.has(w));
       return {
         code: c.code,
         display: c.display,
@@ -541,7 +575,9 @@ export class NlpFunctionComponent implements OnInit {
         // case-insensitive so casing differences don't inflate them.
         distance: this.levenshteinDistance(term.toLowerCase(), clean.toLowerCase()),
         coverage: this.tokenCoverage(queryTokens, clean),
-        exact: this.normText(clean) === queryNorm
+        extra: this.extraTokens(queryTokens, clean),
+        exact: this.normText(clean) === queryNorm,
+        polarityBad
       };
     });
   }
@@ -572,6 +608,14 @@ export class NlpFunctionComponent implements OnInit {
     return this.tokenize(term).map(t => t.slice(0, 3)).join(' ');
   }
 
+  /** How many of the candidate's content tokens are NOT in the query (extra
+   * qualifiers) — used to prefer the most on-target concept over an
+   * over-specific one that merely shares a word. */
+  private extraTokens(queryTokens: string[], display: string): number {
+    const qs = new Set(queryTokens);
+    return this.tokenize(display).filter(t => !qs.has(t)).length;
+  }
+
   /**
    * Remove negation cues so a negated mention is searched as its positive
    * concept (e.g. "no fever" -> "fever", "denies chest pain" -> "chest pain").
@@ -595,6 +639,12 @@ export class NlpFunctionComponent implements OnInit {
     let t = (text || '').replace(/\([^)]*\)/g, ' ');                        // parentheticals & semtags
     t = t.replace(/\b(left|right|bilateral|mild|moderate|severe)\b/gi, ' '); // laterality / severity
     t = t.replace(/\s+/g, ' ').trim();
+    return t || text;
+  }
+
+  /** Drop parenthetical groups (brand/synonym alternatives) from a search term. */
+  private stripParens(text: string): string {
+    const t = (text || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
     return t || text;
   }
 

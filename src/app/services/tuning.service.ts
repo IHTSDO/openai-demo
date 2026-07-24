@@ -11,7 +11,7 @@ export class TuningService {
   static readonly DEFAULTS = {
     coverageMin: 0.5,        // min fraction of query tokens the candidate must contain
     distanceMax: 50,         // max Levenshtein distance to accept
-    candidateCount: 5,       // candidates fetched per $expand
+    candidateCount: 15,      // candidates fetched per $expand
     enableSynonymLookup: true, // $lookup rescue against synonyms
     enableGeneralTerm: true,   // broader "general term" pass
     enableFuzzy: true,         // fuzzy (~) fallback pass

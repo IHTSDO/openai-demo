@@ -35,10 +35,14 @@ export interface TraceCandidate {
   distance: number;
   /** Fraction of the query's content tokens present in this candidate [0..1]. */
   coverage?: number;
+  /** Count of candidate content tokens NOT in the query (extra qualifiers). */
+  extra?: number;
   /** Synonym (not the PT display) that produced the best coverage, if any. */
   matchedTerm?: string;
   /** True when the candidate's normalized display equals the query term. */
   exact?: boolean;
+  /** True when the candidate adds an absence/negation word the query lacks (polarity flip). */
+  polarityBad?: boolean;
   /** True for the candidate that was ultimately chosen (if any). */
   chosen?: boolean;
 }

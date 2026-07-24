@@ -111,7 +111,7 @@ export class NlpFunctionComponent implements OnInit {
     this.loadingNlp = true;
     this.nlpResult = "";
     this.entities = [];
-    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. Be thorough: also capture imaging and procedure mentions even when abbreviated (e.g. CT, MRI, X-ray, ultrasound, ECG). The "text" field must be the clinical term copied verbatim from the input note (so it can be highlighted), but WITHOUT surrounding/trailing punctuation (commas, periods, semicolons) and WITHOUT leading articles (a/an/the); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever". If the note is not in English, keep "text" verbatim in the source language (for highlighting) but give clinicalTerm and generalTerm IN ENGLISH (translate them), and set "language" to the source language, e.g. "fiebre" -> language "Spanish", clinicalTerm "fever".`};
+    const systemPrompt = {role: "system", content: `You are a nlp clinical entity extractor. Extract clinical terms from free text clinical notes and report back with SNOMED CT codes. Be thorough: also capture imaging and procedure mentions even when abbreviated (e.g. CT, MRI, X-ray, ultrasound, ECG). Extract ONLY diagnoses, clinical findings, procedures, and medications. Do NOT extract raw measurements or their numeric values — vital signs (blood pressure, pulse/heart rate, temperature, respiratory rate, oxygen saturation) and laboratory test results/values are OUT OF SCOPE, and do not infer a finding from a raw value (e.g. skip "blood pressure 92/52", "pulse 55", "temperature 98", "platelets 43", "O2 sat 95%"). Only when the clinician explicitly names a clinical interpretation as a finding/diagnosis (e.g. "hypotension", "fever", "bradycardia", "hypoxia", "thrombocytopenia") do you extract that finding. The "text" field must be the clinical term copied verbatim from the input note (so it can be highlighted), but WITHOUT surrounding/trailing punctuation (commas, periods, semicolons) and WITHOUT leading articles (a/an/the); never paraphrase or add words there. For each entity also provide its standard clinical term as used in SNOMED CT (clinicalTerm): map lay or descriptive phrasing to formal terminology and correct spelling (e.g. "low platelet count" -> "thrombocytopenia"), and a broader generalTerm dropping specific qualifiers (e.g. "bilateral pelvic masses" -> "mass"). clinicalTerm and generalTerm must always be the POSITIVE concept even when the mention is negated (the negation is recorded in context=absent), e.g. "no fever" -> clinicalTerm "fever". If the note is not in English, keep "text" verbatim in the source language (for highlighting) but give clinicalTerm and generalTerm IN ENGLISH (translate them), and set "language" to the source language, e.g. "fiebre" -> language "Spanish", clinicalTerm "fever".`};
     // Strict JSON schema for Structured Outputs. In strict mode every property
     // must be listed in `required` and objects need additionalProperties:false;
     // optional fields (severity/laterality) are modelled as nullable unions.
@@ -147,7 +147,9 @@ export class NlpFunctionComponent implements OnInit {
       }
     };
     const message = `Extract clinical terms and assign SNOMED CT codes to this text: ${this.clinicalText}\n`;
-    const completion = await this.openaiService.extract([systemPrompt, {role: "user", content: message}], schema, { maxCompletionTokens: 10000 });
+    // Large notes (many entities) plus the model's reasoning tokens can exceed a
+    // small budget and truncate the JSON; give the extraction generous room.
+    const completion = await this.openaiService.extract([systemPrompt, {role: "user", content: message}], schema, { maxCompletionTokens: 20000 });
     // Clone the extracted terms so each run starts from fresh entity objects.
     // Matching mutates entities (text/type/snomed/trace); without cloning, a
     // re-run would reuse the cached extraction's already-matched objects and
@@ -860,9 +862,18 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
   }
 
   removeSemtag(text: string): string {
-    let index = text.lastIndexOf("(");
-    if (index > 0) {
-      return text.substring(0, index).trim();
+    // Only strip a TRAILING semantic tag, i.e. a parenthetical at the very end
+    // ("Hypertensive disorder (disorder)"). Do NOT strip a mid-string
+    // parenthetical that is followed by more text — in product names like
+    // "Clopidogrel (as clopidogrel bisulfate) 300 mg oral tablet" the "(as …)"
+    // is part of the name, and stripping it would make a dose-specific product
+    // score as if it were the plain generic (exact match, zero extra tokens).
+    const t = (text || '').trim();
+    if (t.endsWith(')')) {
+      const index = t.lastIndexOf('(');
+      if (index > 0) {
+        return t.substring(0, index).trim();
+      }
     }
     return text;
   }

@@ -43,6 +43,8 @@ export interface TraceCandidate {
   exact?: boolean;
   /** True when the candidate adds an absence/negation word the query lacks (polarity flip). */
   polarityBad?: boolean;
+  /** Position in the server's relevance-ranked result (0 = top); trusted as the primary within-search signal. */
+  rank?: number;
   /** True for the candidate that was ultimately chosen (if any). */
   chosen?: boolean;
 }

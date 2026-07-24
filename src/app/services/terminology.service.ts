@@ -11,11 +11,18 @@ export class TerminologyService {
   defaultFhirUrlParam = 'http://snomed.info/sct'; // 'http://snomed.info/sct/11000221109/version/20211130'
   fhirUrlParam = this.defaultFhirUrlParam;
   lang = 'en';
+  /** Whether the active server supports the ECL/term `~` fuzzy operator
+   *  (Snowstorm Lite does; full Snowstorm does not). Gates the fuzzy pass. */
+  supportsFuzzy = true;
 
   constructor(private http: HttpClient) { }
 
   setSnowstormFhirBase(url: string) {
     this.snowstormFhirBase = url;
+  }
+
+  setSupportsFuzzy(supported: boolean) {
+    this.supportsFuzzy = supported;
   }
   
   setFhirUrlParam(url: string) {

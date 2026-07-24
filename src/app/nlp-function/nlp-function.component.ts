@@ -253,22 +253,34 @@ export class NlpFunctionComponent implements OnInit {
       let exactFound = false;     // stop escalating the reformulation passes once we hit an exact match
       let lastLookup: any = null; // synonym $lookup done in the last consider(), for the trace
 
-      // Rank candidates by *our* criteria — exact normalized match, then query
-      // token coverage, then edit distance — rather than trusting the server's
-      // order (Snowstorm Lite mis-ranks broad terms). Escalation is gated on
-      // "no accepted match yet", NOT "zero candidates", so lexically unrelated
-      // noise (returned but low-coverage) still falls through to the next pass.
-      const rankBetter = (a: any, b: any): boolean =>
+      // WITHIN a single search we trust the server's relevance order (full
+      // Snowstorm ranks the correct generic first, e.g. "hypertension" ->
+      // "Hypertensive disorder"). Our own token coverage used to override that
+      // and pick a token-containing subtype ("Renal hypertension"); now rank is
+      // the primary signal, after only exact-match and the polarity guard.
+      const rankWithin = (a: any, b: any): boolean =>
+        (!!a.exact !== !!b.exact) ? !!a.exact
+          : (!!a.polarityBad !== !!b.polarityBad) ? !a.polarityBad
+          : ((a.rank ?? 0) !== (b.rank ?? 0)) ? (a.rank ?? 0) < (b.rank ?? 0)
+          : a.distance < b.distance;
+      // A candidate is "confident" enough to accept when it is an exact match,
+      // or covers the query well (morphology-aware) at a sane edit distance and
+      // does not flip polarity. Synonym $lookup can lift coverage first.
+      const confident = (c: any): boolean =>
+        !!c && (!!c.exact || (!c.polarityBad && (c.coverage ?? 0) >= COVERAGE_MIN && c.distance < DISTANCE_THRESHOLD));
+      // ACROSS passes we cannot compare raw ranks (each search ranks against a
+      // different query), so prefer exact, then confident, then higher coverage,
+      // then shorter distance.
+      const betterAcross = (a: any, b: any): boolean =>
         !b ? true
           : (!!a.exact !== !!b.exact) ? !!a.exact
-          : (!!a.polarityBad !== !!b.polarityBad) ? !a.polarityBad
+          : (confident(a) !== confident(b)) ? confident(a)
           : ((a.coverage ?? 0) !== (b.coverage ?? 0)) ? (a.coverage ?? 0) > (b.coverage ?? 0)
-          : ((a.extra ?? 0) !== (b.extra ?? 0)) ? (a.extra ?? 0) < (b.extra ?? 0)
           : a.distance < b.distance;
       const consider = async (cands: TraceCandidate[]): Promise<boolean> => {
         lastLookup = null;
         if (!cands.length) return false;
-        const top = [...cands].sort((a, b) => rankBetter(a, b) ? -1 : 1)[0];
+        const top = [...cands].sort((a, b) => rankWithin(a, b) ? -1 : 1)[0];
 
         // The server returns the preferred term, but the match may have been on
         // a SYNONYM. If low PT coverage is the only thing holding back an
@@ -296,12 +308,12 @@ export class NlpFunctionComponent implements OnInit {
           };
         }
 
-        if (rankBetter(top, considered)) {
+        if (betterAcross(top, considered)) {
           considered = top;
         }
         if (top.exact) { exactFound = true; }
         // Whether THIS pass produced a confident candidate (only for step status).
-        return !!top.exact || (!top.polarityBad && (top.coverage ?? 0) >= COVERAGE_MIN && top.distance < DISTANCE_THRESHOLD);
+        return confident(top);
       };
       const searchStatus = (cands: TraceCandidate[], accepted: boolean) =>
         accepted ? 'ok' : (cands.length ? 'warn' : 'fail');
@@ -310,8 +322,7 @@ export class NlpFunctionComponent implements OnInit {
       // literal hit can't pre-empt an exact clinical-term match found later.
       const tryAccept = () => {
         if (entity.snomed || !considered) { return; }
-        const ok = !!considered.exact || (!considered.polarityBad && (considered.coverage ?? 0) >= COVERAGE_MIN && considered.distance < DISTANCE_THRESHOLD);
-        if (ok) {
+        if (confident(considered)) {
           entity.snomed = { code: considered.code, display: considered.display };
           considered.chosen = true;
         }
@@ -471,7 +482,7 @@ export class NlpFunctionComponent implements OnInit {
 
       // Pass 5 — FUZZY search (Snowstorm `~`): last resort for typos / spelling
       // variants, using the most reduced term we have.
-      if (!entity.snomed && this.tuning.enableFuzzy) {
+      if (!entity.snomed && this.tuning.enableFuzzy && this.terminologyService.supportsFuzzy) {
         candidates = related(await this.searchCandidates(queryTerm, entity.type, true));
         accepted = await consider(candidates);
         entity.trace.steps.push({
@@ -581,7 +592,7 @@ export class NlpFunctionComponent implements OnInit {
     const queryTokens = this.tokenize(term);
     const queryNorm = this.normText(term);
     const queryWords = new Set(queryNorm.split(' '));
-    return (response?.expansion?.contains || []).map((c: any) => {
+    return (response?.expansion?.contains || []).map((c: any, idx: number) => {
       const clean = this.removeSemtag(c.display);
       // Polarity flip: the candidate carries an absence/negation word the query
       // does not (e.g. query "sputum production" → candidate "No sputum"). Such a
@@ -597,7 +608,8 @@ export class NlpFunctionComponent implements OnInit {
         coverage: this.tokenCoverage(queryTokens, clean),
         extra: this.extraTokens(queryTokens, clean),
         exact: this.normText(clean) === queryNorm,
-        polarityBad
+        polarityBad,
+        rank: idx
       };
     });
   }
@@ -615,11 +627,19 @@ export class NlpFunctionComponent implements OnInit {
       .map(t => t.length > 4 ? t.replace(/(es|s)$/, '') : t);
   }
 
-  /** Fraction of the query's content tokens present in the candidate display. */
+  /** Two content tokens are equivalent if they share a >=4-char stem prefix, so
+   *  morphological variants match (hypertension/hypertensive, respiration/
+   *  respiratory) without a full stemmer, while unrelated words do not. */
+  private sharesStem(a: string, b: string): boolean {
+    return a === b || (a.length >= 4 && b.length >= 4 && a.slice(0, 4) === b.slice(0, 4));
+  }
+
+  /** Fraction of the query's content tokens present in the candidate display,
+   *  counting morphological variants (see sharesStem) as present. */
   private tokenCoverage(queryTokens: string[], display: string): number {
     if (!queryTokens.length) return 0;
-    const set = new Set(this.tokenize(display));
-    const matched = queryTokens.filter(t => set.has(t)).length;
+    const dt = this.tokenize(display);
+    const matched = queryTokens.filter(t => dt.some(d => this.sharesStem(t, d))).length;
     return matched / queryTokens.length;
   }
 

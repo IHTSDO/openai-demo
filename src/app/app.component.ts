@@ -22,7 +22,9 @@ export class AppComponent {
     // { name: "Daily build", url: "https://dailybuild.ihtsdotools.org/fhir"}
     // { name: "SNOMED Public", url: "https://snowstorm.ihtsdotools.org/fhir"}
     // { name: "SNOMED Dev IS", url: "https://dev-is-browser.ihtsdotools.org/fhir"},
-    ({ name: "Snowstorm Lite Demo", url: "https://implementation-demo.snomedtools.org/snowstorm-lite/fhir"})
+    // Full Snowstorm ranks relevance better than Lite but has no fuzzy (~) operator.
+    ({ name: "Snowstorm", url: "https://implementation-demo.snomedtools.org/fhir", fuzzy: false }),
+    ({ name: "Snowstorm Lite Demo", url: "https://implementation-demo.snomedtools.org/snowstorm-lite/fhir", fuzzy: true })
   ];
   selectedServer = this.fhirServers[0];
 
@@ -81,6 +83,7 @@ export class AppComponent {
   setFhirServer(server: any) {
     this.selectedServer = server;
     this.terminologyService.setSnowstormFhirBase(server.url);
+    this.terminologyService.setSupportsFuzzy(server.fuzzy !== false);
     this.selectedEdition = 'Edition';
     this.editions = [];
     this.editionsDetails = [];

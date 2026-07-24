@@ -280,7 +280,8 @@ export class NlpFunctionComponent implements OnInit {
       const consider = async (cands: TraceCandidate[]): Promise<boolean> => {
         lastLookup = null;
         if (!cands.length) return false;
-        const top = [...cands].sort((a, b) => rankWithin(a, b) ? -1 : 1)[0];
+        const sorted = [...cands].sort((a, b) => rankWithin(a, b) ? -1 : 1);
+        let top = sorted[0];
 
         // The server returns the preferred term, but the match may have been on
         // a SYNONYM. If low PT coverage is the only thing holding back an
@@ -306,6 +307,16 @@ export class NlpFunctionComponent implements OnInit {
             coverage: top.coverage,
             matchedTerm: top.matchedTerm
           };
+        }
+
+        // If the server's top choice is not confident even after the synonym
+        // lookup, fall back to the best-ranked candidate that is confident on
+        // its own — a weak rank-0 shouldn't bury a solid lower-ranked hit (e.g.
+        // "thrombocytopenia" ranks "Platelet count below reference range" (no
+        // coverage) above the clean "Thrombocytopenic disorder").
+        if (!confident(top)) {
+          const conf = sorted.find(c => confident(c));
+          if (conf) { top = conf; }
         }
 
         if (betterAcross(top, considered)) {

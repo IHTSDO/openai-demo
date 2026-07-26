@@ -6,6 +6,7 @@ import { TraceCandidate } from './entity-trace.model';
 import { EntityTraceDialogComponent } from '../entity-trace-dialog/entity-trace-dialog.component';
 import { AlgorithmTuningDialogComponent } from '../algorithm-tuning-dialog/algorithm-tuning-dialog.component';
 import { TuningService } from '../services/tuning.service';
+import { CodingAgentService } from '../services/coding-agent.service';
 
 @Component({
     selector: 'app-nlp-function',
@@ -62,7 +63,7 @@ export class NlpFunctionComponent implements OnInit {
     { code: '24484000', display: 'Severe'}
   ];
 
-  constructor(private terminologyService: TerminologyService, private openaiService: OpenaiService, public dialog: MatDialog, public tuning: TuningService) { }
+  constructor(private terminologyService: TerminologyService, private openaiService: OpenaiService, public dialog: MatDialog, public tuning: TuningService, private codingAgent: CodingAgentService) { }
 
   ngOnInit(): void {
   }
@@ -218,6 +219,14 @@ export class NlpFunctionComponent implements OnInit {
       this.status = 'Phase 3/3 · Reviewing candidates with the LLM…';
       rerankCost = await this.reRankWithLlm(this.entities);
     }
+    // Phase 3b: agentic fallback (opt-in) — for entities the deterministic
+    // pipeline + review still left unresolved, let a tool-using agent drive the
+    // search itself (reword, broaden, walk ECL ancestors). Intense LLM use, so
+    // it only runs on the hard leftovers.
+    let agentCost = '';
+    if (this.tuning.enableCodingAgent) {
+      agentCost = await this.runCodingAgent(this.entities);
+    }
     this.status = 'Phase 3/3 · Finalizing results…';
     // Keep unmatched entities too: entities the LLM detected but that could not
     // be resolved on the terminology server stay visible (dotted highlight),
@@ -230,7 +239,7 @@ export class NlpFunctionComponent implements OnInit {
     this.nlpResult = JSON.stringify(this.entities, null, 2);
     const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
     const costPart = completion.cached ? 'Using AI cache · $0.00' : `Cost: $${completion.cost}`;
-    this.status = `Done in ${elapsed}s · ${matchedCount}/${this.entities.length} entities matched to SNOMED CT · ${costPart}${rerankCost} · ${this.openaiService.getModel()}`;
+    this.status = `Done in ${elapsed}s · ${matchedCount}/${this.entities.length} entities matched to SNOMED CT · ${costPart}${rerankCost}${agentCost} · ${this.openaiService.getModel()}`;
     // const functionPrompt = {role: "function", name: functionName, content: JSON.stringify(this.entities)};
     // const completion2 = await this.openaiService.completion(
     //   [
@@ -752,6 +761,62 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
     }
     const costTag = result.cached ? 'review cached' : `review $${result.cost}`;
     return ` (+ ${costTag}, ${jobs.length} reviewed)`;
+  }
+
+  /**
+   * Phase 3b — agentic fallback. For each entity still unresolved after the
+   * deterministic cascade and the review, let the coding agent drive the search
+   * itself (reword / broaden / ECL ancestors) via the expand/lookup tools, and
+   * accept its decision. Runs sequentially over the few leftovers. Returns a
+   * status fragment with the cost and how many it coded.
+   */
+  private async runCodingAgent(entities: any[]): Promise<string> {
+    const unresolved = entities.filter((e: any) => !e.matched);
+    if (!unresolved.length) { return ''; }
+    let spent = 0;
+    let coded = 0;
+    let idx = 0;
+    for (const entity of unresolved) {
+      idx++;
+      this.status = `Phase 3/3 · Auto-coding agent (${idx} of ${unresolved.length})…`;
+      let dec: any = null;
+      try {
+        dec = await this.codingAgent.codeEntity(entity);
+      } catch (err: any) {
+        console.warn('Coding agent failed for', entity.text, err?.message);
+      }
+      spent += parseFloat(dec?.cost || '0') || 0;
+      const steps = entity.trace?.steps ?? [];
+      const resultIdx = steps.length && steps[steps.length - 1].stage === 'result' ? steps.length - 1 : steps.length;
+      if (dec && dec.code) {
+        entity.snomed = { code: String(dec.code), display: dec.display };
+        entity.matched = true;
+        coded++;
+        steps.splice(resultIdx, 0, {
+          stage: 'score', status: 'ok', title: 'Auto-coding agent',
+          detail: `chose "${dec.display}" · rung ${dec.rungReached ?? '?'} · ${(dec.toolTrace || []).length} tool call(s) · ${dec.rationale || ''}`,
+          data: { code: dec.code, display: dec.display, rungReached: dec.rungReached, confidence: dec.confidence, rationale: dec.rationale, toolCalls: (dec.toolTrace || []).length }
+        });
+      } else {
+        steps.splice(resultIdx, 0, {
+          stage: 'score', status: 'warn', title: 'Auto-coding agent',
+          detail: `no faithful concept · ${(dec?.toolTrace || []).length} tool call(s) · ${dec?.rationale || ''}`,
+          data: { rationale: dec?.rationale, toolCalls: (dec?.toolTrace || []).length }
+        });
+      }
+      // Refresh the trailing result step to reflect the agent's decision.
+      entity.trace.matched = entity.matched;
+      const resultStep = steps[steps.length - 1];
+      if (resultStep && resultStep.stage === 'result') {
+        resultStep.status = entity.matched ? 'ok' : 'fail';
+        resultStep.title = entity.matched ? 'Matched to SNOMED CT' : 'Unresolved';
+        resultStep.detail = entity.matched ? `${entity.snomed.code} | ${entity.snomed.display}` : (entity.snomed?.expression || 'No match found');
+        resultStep.data = entity.matched
+          ? { code: entity.snomed.code, display: entity.snomed.display }
+          : { reason: entity.snomed?.expression || 'unresolved' };
+      }
+    }
+    return ` (+ agent $${spent.toFixed(4)}, ${coded}/${unresolved.length} coded)`;
   }
 
   /**

@@ -167,6 +167,85 @@ export class OpenaiService {
   }
 
   /**
+   * Agentic tool-use loop (inline function calling — no MCP). Calls the model
+   * with `tools`; whenever it asks to call a tool, runs `executeTool(name, args)`,
+   * feeds the result back, and loops until the model returns a final text answer
+   * or `maxIters` is reached. Returns the final text, a trace of every tool call
+   * (for provenance), the accumulated cost, and the iteration count. Not cached —
+   * the tool results are live, and this is meant for the few hard entities only.
+   */
+  async chatWithTools(
+    messages: any[],
+    tools: any[],
+    executeTool: (name: string, args: any) => Promise<any>,
+    options?: { maxIters?: number; maxCompletionTokens?: number }
+  ): Promise<{ content: string; toolTrace: any[]; cost: string; iterations: number }> {
+    const maxIters = options?.maxIters ?? 6;
+    const maxCompletionTokens = options?.maxCompletionTokens ?? 4000;
+    const apiKey = this.resolveApiKey();
+    const openai = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
+    const msgs = [...messages];
+    const toolTrace: any[] = [];
+    let promptTokens = 0;
+    let completionTokens = 0;
+
+    for (let i = 0; i < maxIters; i++) {
+      let resp: any;
+      try {
+        resp = await openai.chat.completions.create({
+          model: this.model,
+          messages: msgs,
+          tools,
+          max_completion_tokens: maxCompletionTokens
+        } as any);
+      } catch (err: any) {
+        throw new Error(this.describeOpenAiError(err));
+      }
+      promptTokens += resp?.usage?.prompt_tokens ?? 0;
+      completionTokens += resp?.usage?.completion_tokens ?? 0;
+      const message = resp?.choices?.[0]?.message;
+      msgs.push(message);
+      const calls = message?.tool_calls ?? [];
+      if (!calls.length) {
+        return {
+          content: message?.content ?? '',
+          toolTrace,
+          cost: this.computeCost({ prompt_tokens: promptTokens, completion_tokens: completionTokens }),
+          iterations: i + 1
+        };
+      }
+      for (const tc of calls) {
+        let args: any = {};
+        try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* keep {} */ }
+        let result: any;
+        try { result = await executeTool(tc.function?.name, args); }
+        catch (e: any) { result = { error: e?.message || String(e) }; }
+        toolTrace.push({ name: tc.function?.name, args, result });
+        msgs.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(result).slice(0, 4000) });
+      }
+    }
+
+    // Out of iterations — ask once for a final answer with no tools.
+    msgs.push({ role: 'user', content: 'Stop searching now and give your final JSON answer.' });
+    let resp: any;
+    try {
+      resp = await openai.chat.completions.create({
+        model: this.model, messages: msgs, max_completion_tokens: maxCompletionTokens
+      } as any);
+    } catch (err: any) {
+      throw new Error(this.describeOpenAiError(err));
+    }
+    promptTokens += resp?.usage?.prompt_tokens ?? 0;
+    completionTokens += resp?.usage?.completion_tokens ?? 0;
+    return {
+      content: resp?.choices?.[0]?.message?.content ?? '',
+      toolTrace,
+      cost: this.computeCost({ prompt_tokens: promptTokens, completion_tokens: completionTokens }),
+      iterations: maxIters
+    };
+  }
+
+  /**
    * Turn an OpenAI SDK error into a short, user-friendly message.
    * Distinguishes connection/network failures from HTTP status errors
    * (auth, rate limit, etc.) so the UI can show something actionable

@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef, NgZone } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { TerminologyService } from '../services/terminology.service';
 import { OpenaiService } from '../services/openai.service';
@@ -63,7 +63,7 @@ export class NlpFunctionComponent implements OnInit {
     { code: '24484000', display: 'Severe'}
   ];
 
-  constructor(private terminologyService: TerminologyService, private openaiService: OpenaiService, public dialog: MatDialog, public tuning: TuningService, private codingAgent: CodingAgentService) { }
+  constructor(private terminologyService: TerminologyService, private openaiService: OpenaiService, public dialog: MatDialog, public tuning: TuningService, private codingAgent: CodingAgentService, private zone: NgZone) { }
 
   ngOnInit(): void {
   }
@@ -251,7 +251,12 @@ export class NlpFunctionComponent implements OnInit {
     } catch (err: any) {
       this.status = 'Error: ' + (err?.message || 'Could not extract entities.');
     } finally {
-      this.loadingNlp = false;
+      // The LLM SDK's async can resolve outside Angular's zone, so the final
+      // state change (and the results/status set above) may not trigger change
+      // detection on its own. Run the reset inside the zone to force a repaint,
+      // otherwise the UI stays frozen on the last agent status with the Process
+      // button disabled even though the run has finished.
+      this.zone.run(() => { this.loadingNlp = false; });
     }
   }
 

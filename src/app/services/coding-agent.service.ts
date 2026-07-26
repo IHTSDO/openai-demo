@@ -95,8 +95,12 @@ When done, reply with ONLY a JSON object (no prose): {"code": "<id or null>", "d
     return { error: `unknown tool ${name}` };
   }
 
-  /** Resolve one entity agentically. Returns the decision (code null if none). */
-  async codeEntity(entity: any): Promise<AgentDecision> {
+  /**
+   * Resolve one entity agentically. Returns the decision (code null if none).
+   * `onAction` fires just before each tool runs, so the caller can surface what
+   * the agent is doing (which term it is searching / looking up) live.
+   */
+  async codeEntity(entity: any, onAction?: (a: { name: string; args: any }) => void): Promise<AgentDecision> {
     const { ecl, label } = this.terminology.eclForType(entity.type);
     const messages = [
       { role: 'system', content: this.policy },
@@ -109,8 +113,9 @@ When done, reply with ONLY a JSON object (no prose): {"code": "<id or null>", "d
           generalTerm: entity.generalTerm
         }) }
     ];
+    const run = (n: string, a: any) => { try { onAction?.({ name: n, args: a }); } catch { /* ignore */ } return this.exec(n, a); };
     const { content, toolTrace, cost, iterations } =
-      await this.openai.chatWithTools(messages, this.tools, (n, a) => this.exec(n, a), { maxIters: 6, maxCompletionTokens: 4000 });
+      await this.openai.chatWithTools(messages, this.tools, run, { maxIters: 6, maxCompletionTokens: 4000 });
     const decision = this.parseDecision(content);
     return { ...decision, cost, iterations, toolTrace };
   }

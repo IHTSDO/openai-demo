@@ -776,12 +776,21 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
     let spent = 0;
     let coded = 0;
     let idx = 0;
+    // Human-readable description of a tool action for the live status line.
+    const describe = (a: { name: string; args: any }): string => {
+      if (a.name === 'lookup') { return `looking up ${a.args?.code ?? ''}`; }
+      const ecl = String(a.args?.ecl ?? '');
+      if (ecl.trim().startsWith('>')) { return `finding ancestors of ${ecl.replace(/[^0-9]/g, '') || 'concept'}`; }
+      return `searching "${a.args?.filter ?? a.args?.ecl ?? ''}"`;
+    };
     for (const entity of unresolved) {
       idx++;
-      this.status = `Phase 3/3 · Auto-coding agent (${idx} of ${unresolved.length})…`;
+      this.status = `Phase 3/3 · Auto-coding agent (${idx} of ${unresolved.length}) · "${entity.text}"…`;
       let dec: any = null;
       try {
-        dec = await this.codingAgent.codeEntity(entity);
+        dec = await this.codingAgent.codeEntity(entity, (a) => {
+          this.status = `Phase 3/3 · Agent (${idx}/${unresolved.length}) · "${entity.text}" → ${describe(a)}`;
+        });
       } catch (err: any) {
         console.warn('Coding agent failed for', entity.text, err?.message);
       }

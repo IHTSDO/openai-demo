@@ -97,9 +97,12 @@
 
       <p class="hiw-caption">
         No confident match? The LLM offers a broader or alternative term and Snowstorm searches again
-        — LLM&nbsp;↔&nbsp;Snowstorm. Finally, a second <strong>LLM review</strong> double-checks the
+        — LLM&nbsp;↔&nbsp;Snowstorm. A second <strong>LLM review</strong> double-checks the
         uncertain matches and rejects a concept that is more specific or off-topic than the note states,
-        leaving the entity unresolved rather than mis-coded. Open any row's <strong>Flow</strong> to see
+        leaving the entity unresolved rather than mis-coded. Optionally, an <strong>LLM agent</strong>
+        (enable it in Tuning — intense LLM use) then takes only the still-unresolved entities and drives
+        the search itself: rewording the term, broadening it, or walking up the SNOMED&nbsp;CT hierarchy,
+        until it finds a faithful concept or returns none. Open any row's <strong>Flow</strong> to see
         the exact steps for an entity.
       </p>
 

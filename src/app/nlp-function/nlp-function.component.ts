@@ -34,12 +34,14 @@ export class NlpFunctionComponent implements OnInit {
   A -. "no confident match:<br/>broader / synonym" .-> L
   A --> R["LLM review<br/>uncertain matches"]
   R --> C["SNOMED CT concept"]
-  R -. "no faithful<br/>concept" .-> U["Unresolved"]
+  R -. "unresolved" .-> G["LLM agent (opt-in)<br/>search · reword · ancestors"]
+  G --> C
+  G -. "no faithful<br/>concept" .-> U["Unresolved"]
   classDef llm fill:#ede7f6,stroke:#b39ddb,color:#5e35b1;
   classDef snow fill:#e0f2f1,stroke:#80cbc4,color:#00796b;
   classDef local fill:#eceff1,stroke:#b0bec5,color:#546e7a;
   classDef neutral fill:#ffffff,stroke:#cfd8e3,color:#003865;
-  class L,R llm;
+  class L,R,G llm;
   class S1,S2 snow;
   class A local;
   class N,C,U neutral;`;

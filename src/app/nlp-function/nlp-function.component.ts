@@ -778,8 +778,20 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
    * status fragment with the cost and how many it coded.
    */
   private async runCodingAgent(entities: any[]): Promise<string> {
+    // Always take the still-unresolved entities. Optionally also take
+    // LOW-CONFIDENCE matched ones — where the chosen concept was NOT an exact
+    // match — so the agent can re-judge them (this is where lexical drift like
+    // "inflammation" → "Anal inflammation" hides; the deterministic layer can't
+    // see it, but the agent can). More LLM calls, so it is opt-in.
+    const chosenOf = (e: any) => (e.trace?.steps ?? [])
+      .flatMap((s: any) => s.data?.candidates ?? [])
+      .find((c: any) => c.chosen);
     const unresolved = entities.filter((e: any) => !e.matched);
-    if (!unresolved.length) { return ''; }
+    const lowConfidence = this.tuning.codingAgentIncludeLowConfidence
+      ? entities.filter((e: any) => e.matched && !chosenOf(e)?.exact)
+      : [];
+    const work = [...unresolved, ...lowConfidence];
+    if (!work.length) { return ''; }
     let spent = 0;
     let coded = 0;
     let idx = 0;
@@ -790,13 +802,13 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
       if (ecl.trim().startsWith('>')) { return `finding ancestors of ${ecl.replace(/[^0-9]/g, '') || 'concept'}`; }
       return `searching "${a.args?.filter ?? a.args?.ecl ?? ''}"`;
     };
-    for (const entity of unresolved) {
+    for (const entity of work) {
       idx++;
-      this.status = `Phase 3/3 · Auto-coding agent (${idx} of ${unresolved.length}) · "${entity.text}"…`;
+      this.status = `Phase 3/3 · Auto-coding agent (${idx} of ${work.length}) · "${entity.text}"…`;
       let dec: any = null;
       try {
         dec = await this.codingAgent.codeEntity(entity, (a) => {
-          this.status = `Phase 3/3 · Agent (${idx}/${unresolved.length}) · "${entity.text}" → ${describe(a)}`;
+          this.status = `Phase 3/3 · Agent (${idx}/${work.length}) · "${entity.text}" → ${describe(a)}`;
         });
       } catch (err: any) {
         console.warn('Coding agent failed for', entity.text, err?.message);
@@ -832,7 +844,7 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
           : { reason: entity.snomed?.expression || 'unresolved' };
       }
     }
-    return ` (+ agent $${spent.toFixed(4)}, ${coded}/${unresolved.length} coded)`;
+    return ` (+ agent $${spent.toFixed(4)}, ${coded}/${work.length} coded${lowConfidence.length ? `, ${lowConfidence.length} low-conf` : ''})`;
   }
 
   /**

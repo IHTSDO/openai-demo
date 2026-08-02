@@ -18,6 +18,7 @@ export class TuningService {
     enablePrefixSearch: false, // last-resort prefix pass (first 3 letters/word), off by default
     enableLlmRerank: true,     // 2nd LLM call: pick the best candidate per entity, or reject all (null)
     enableCodingAgent: false,  // agentic fallback (tool-using loop) for still-unresolved entities — intense LLM use
+    codingAgentIncludeLowConfidence: false, // also send low-confidence (non-exact) MATCHED entities to the agent, not just ∅
   };
 
   coverageMin = TuningService.DEFAULTS.coverageMin;
@@ -29,6 +30,7 @@ export class TuningService {
   enablePrefixSearch = TuningService.DEFAULTS.enablePrefixSearch;
   enableLlmRerank = TuningService.DEFAULTS.enableLlmRerank;
   enableCodingAgent = TuningService.DEFAULTS.enableCodingAgent;
+  codingAgentIncludeLowConfidence = TuningService.DEFAULTS.codingAgentIncludeLowConfidence;
 
   constructor() {
     this.load();
@@ -65,7 +67,7 @@ export class TuningService {
   }
 
   private snapshot() {
-    const { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy, enablePrefixSearch, enableLlmRerank, enableCodingAgent } = this;
-    return { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy, enablePrefixSearch, enableLlmRerank, enableCodingAgent };
+    const { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy, enablePrefixSearch, enableLlmRerank, enableCodingAgent, codingAgentIncludeLowConfidence } = this;
+    return { coverageMin, distanceMax, candidateCount, enableSynonymLookup, enableGeneralTerm, enableFuzzy, enablePrefixSearch, enableLlmRerank, enableCodingAgent, codingAgentIncludeLowConfidence };
   }
 }

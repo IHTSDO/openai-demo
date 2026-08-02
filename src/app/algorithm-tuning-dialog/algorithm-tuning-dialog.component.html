@@ -52,6 +52,10 @@
       <mat-slide-toggle [(ngModel)]="tuning.enableCodingAgent">Auto-coding agent for unresolved (intense LLM use)</mat-slide-toggle>
       <mat-icon class="tune-changed" *ngIf="tuning.isChanged('enableCodingAgent')" title="Changed from default (off)">edit</mat-icon>
     </div>
+    <div class="tune-toggle-row" *ngIf="tuning.enableCodingAgent">
+      <mat-slide-toggle [(ngModel)]="tuning.codingAgentIncludeLowConfidence">&nbsp;↳ also review low-confidence matches (not just unresolved)</mat-slide-toggle>
+      <mat-icon class="tune-changed" *ngIf="tuning.isChanged('codingAgentIncludeLowConfidence')" title="Changed from default (off)">edit</mat-icon>
+    </div>
   </div>
 </mat-dialog-content>
 

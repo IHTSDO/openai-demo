@@ -57,7 +57,7 @@
 
         <ng-container matColumnDef="snomed">
           <th mat-header-cell *matHeaderCellDef> SNOMED Concept </th>
-          <td mat-cell *matCellDef="let element"> {{element.snomed?.expression}} </td>
+          <td mat-cell *matCellDef="let element"> {{ element.snomed?.expression || (element.snomed?.code ? element.snomed.code + ' |' + element.snomed.display + '|' : '') }} </td>
         </ng-container>
 
         <ng-container matColumnDef="steps">

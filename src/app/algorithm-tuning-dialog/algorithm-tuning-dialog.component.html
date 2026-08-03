@@ -7,6 +7,14 @@
   </p>
 
   <mat-form-field appearance="outline" class="tune-field" subscriptSizing="dynamic">
+    <mat-label>LLM model</mat-label>
+    <mat-select [ngModel]="openai.getModel()" (ngModelChange)="onModelChange($event)">
+      <mat-option *ngFor="let m of models" [value]="m.id">{{ m.label }} — {{ m.price }} · {{ m.speed }}</mat-option>
+    </mat-select>
+    <mat-hint>Price is relative ($ = cheapest); speed is a rough guide</mat-hint>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="tune-field" subscriptSizing="dynamic">
     <mat-label>Token coverage threshold</mat-label>
     <input matInput type="number" min="0" max="1" step="0.05" [(ngModel)]="tuning.coverageMin">
     <mat-icon matSuffix class="tune-changed" *ngIf="tuning.isChanged('coverageMin')" title="Changed from default (0.5)">edit</mat-icon>

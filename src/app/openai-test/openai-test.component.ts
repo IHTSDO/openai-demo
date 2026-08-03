@@ -20,15 +20,18 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
   storageKey = "tempDataSct";
   apiKey: string = "";
   apiKeyInInput: string = ""
-  model = "";
   videoId = '-9Ro_Sa_5g8';
+
+  /** Live current model id (chosen in the Tuning dialog now). */
+  get currentModel(): string {
+    return this.openaiService.getModel();
+  }
 
   constructor(@Inject(LOCAL_STORAGE) private storage: StorageService,
               private cacheService: CacheService, private openaiService: OpenaiService,
               public dialog: MatDialog, private cookieService: CookieService) { }
 
   ngOnInit(): void {
-    this.model = this.openaiService.getModel();
     this.apiKey = this.storage.get(this.storageKey)
     // runb this check aftwe 1 second to allow the tab group to be initialized
     setTimeout(() => {
@@ -64,16 +67,6 @@ export class OpenaiTestComponent implements OnInit, OnChanges {
 
   getFromLocalStorage(key: string) {
     return this.storage.get(key);
-  }
-
-  /** Selectable models (id, label, price tier, speed) for the model picker. */
-  get models() {
-    return this.openaiService.models;
-  }
-
-  onModelChange(id: string) {
-    this.openaiService.setModel(id);
-    this.model = id;
   }
 
 }

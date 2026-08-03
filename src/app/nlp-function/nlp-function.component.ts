@@ -565,33 +565,7 @@ export class NlpFunctionComponent implements OnInit {
       });
       if (entity.snomed) {
         entity.matched = true;
-        let ctuf = entity.snomed.code + " |" + entity.snomed.display + "|:\n";
-        if (entity.type == "F" && entity.context == "absent") {
-         ctuf = ctuf + `408729009 |Finding context| = 410516002 |Known absent|`;
-        }
-        if (entity.laterality) {
-          let laterality = this.lateralities.find((l: any) => l.display.toLowerCase() == entity.laterality.toLowerCase());
-          if (laterality) {
-            if (!ctuf.endsWith(":\n")) {
-              ctuf = ctuf + " ,\n";
-            }
-            ctuf = ctuf + `272741003 |Laterality| = ${laterality.code} |${laterality.display}|`;
-          }
-        }
-        if (entity.severity) {
-          let severity = this.severities.find((s: any) => s.display.toLowerCase() == entity.severity.toLowerCase());
-          if (severity) {
-            if (!ctuf.endsWith(":\n")) {
-              ctuf = ctuf + " ,\n";
-            }
-            ctuf = ctuf + `246112005 |Severity| = ${severity.code} |${severity.display}|`;
-          }
-        }
-        if (ctuf.endsWith(":\n")) {
-          // remove last 2 characters of the form
-          ctuf = ctuf.substring(0, ctuf.length - 2);
-        }
-        entity.snomed.expression = ctuf;
+        entity.snomed.expression = this.buildExpression(entity);
       } else {
         // Detected by the LLM but not resolved on the terminology server.
         entity.matched = false;
@@ -615,6 +589,37 @@ export class NlpFunctionComponent implements OnInit {
           : { reason: entity.snomed.expression }
       });
     });
+  }
+
+  /**
+   * Build the post-coordinated SNOMED expression for a matched entity: the chosen
+   * concept plus the qualifiers the FIRST LLM extraction captured (finding context
+   * for absence, laterality, severity). Shared by the deterministic cascade, the
+   * LLM review, and the auto-coding agent so a concept coded by any phase carries
+   * the same laterality/severity refinements — the agent searches the concept
+   * WITHOUT the qualifier, and we re-attach it here as post-coordination.
+   */
+  private buildExpression(entity: any): string {
+    let ctuf = entity.snomed.code + " |" + entity.snomed.display + "|:\n";
+    if (entity.type == "F" && entity.context == "absent") {
+      ctuf = ctuf + `408729009 |Finding context| = 410516002 |Known absent|`;
+    }
+    if (entity.laterality) {
+      const laterality = this.lateralities.find((l: any) => l.display.toLowerCase() == entity.laterality.toLowerCase());
+      if (laterality) {
+        if (!ctuf.endsWith(":\n")) { ctuf = ctuf + " ,\n"; }
+        ctuf = ctuf + `272741003 |Laterality| = ${laterality.code} |${laterality.display}|`;
+      }
+    }
+    if (entity.severity) {
+      const severity = this.severities.find((s: any) => s.display.toLowerCase() == entity.severity.toLowerCase());
+      if (severity) {
+        if (!ctuf.endsWith(":\n")) { ctuf = ctuf + " ,\n"; }
+        ctuf = ctuf + `246112005 |Severity| = ${severity.code} |${severity.display}|`;
+      }
+    }
+    if (ctuf.endsWith(":\n")) { ctuf = ctuf.substring(0, ctuf.length - 2); }
+    return ctuf;
   }
 
   /**
@@ -735,6 +740,7 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
       const before = entity.matched ? entity.snomed?.display : '∅';
       if (chosen) {
         entity.snomed = { code: chosen.code, display: chosen.display };
+        entity.snomed.expression = this.buildExpression(entity);
         entity.matched = true;
         chosen.chosen = true;
       } else {
@@ -819,6 +825,7 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
       const resultIdx = steps.length && steps[steps.length - 1].stage === 'result' ? steps.length - 1 : steps.length;
       if (dec && dec.code) {
         entity.snomed = { code: String(dec.code), display: dec.display };
+        entity.snomed.expression = this.buildExpression(entity);
         entity.matched = true;
         coded++;
         steps.splice(resultIdx, 0, {

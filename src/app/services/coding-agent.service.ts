@@ -36,12 +36,13 @@ export class CodingAgentService {
         name: 'expand',
         description: 'Search SNOMED CT via ValueSet/$expand within an ECL constraint. '
           + 'Returns concepts {rank, code, display} in the server\'s relevance order. '
-          + 'Pass the type root ECL (given to you) plus a `filter` term, OR pass "> <conceptId>" '
-          + 'as ecl (no filter) to list a concept\'s ancestors for structural generalization.',
+          + 'Pass the type root ECL (given to you) plus a `filter` term; OR pass "> <conceptId>" '
+          + '(no filter) to list a concept\'s ANCESTORS (to generalize); OR "< <conceptId>" with a '
+          + '`filter` of the original mention to list DESCENDANTS (to find a more precise match).',
         parameters: {
           type: 'object',
           properties: {
-            ecl: { type: 'string', description: 'ECL constraint, e.g. "<< 404684003" or "> 38341003".' },
+            ecl: { type: 'string', description: 'ECL constraint, e.g. "<< 404684003", "> 38341003" (ancestors), or "< 38341003" (descendants).' },
             filter: { type: 'string', description: 'Free-text term to search for.' },
             count: { type: 'integer', description: 'Max concepts (default 12).' }
           },
@@ -68,12 +69,12 @@ export class CodingAgentService {
 
 GOLDEN RULE (subsumption): code a concept EQUIVALENT to the mention or MORE GENERAL, NEVER one that is MORE SPECIFIC (that would invent an unstated site, cause, severity, subtype, or larger syndrome).
 
-GENERALIZATION LADDER — search in order of increasing generality, never more specific, accept the most specific FAITHFUL hit, then stop:
+STRATEGY — climb for recall, then descend for precision. Judge specificity against the ORIGINAL mention (the full text), NOT the reworded/simplified term. The IDEAL code is EQUIVALENT to the original mention; accept a more-general one only if no equivalent exists.
 1. Rung 0 — same meaning: reword the mention to its standard clinical term (fix spelling, expand abbreviations, brand→ingredient, US→international, lay→clinical, e.g. "low platelet count"→"thrombocytopenia", "Plavix"→"clopidogrel"). Call expand(ecl=<the type root you were given>, filter=<reworded term>).
-2. Rung 1 — drop ONE qualifier (laterality/severity/site/cause) and search again.
-3. Structural — once you have a plausible seed concept, call expand(ecl="> <seedId>") to list its ancestors and pick the most specific ancestor still faithful to the mention. Prefer this over guessing broader words. Use lookup to confirm a candidate's synonyms.
+2. Rung 1 — if nothing faithful, drop ONE qualifier (laterality/severity/site/cause) and search again; if still nothing, generalize further, or use expand(ecl="> <seedId>") to walk ANCESTORS and pick the most specific ancestor still faithful.
+3. DESCEND for precision — when your best hit so far is MORE GENERAL than the original mention (you reached it by generalizing/simplifying, e.g. mention "calcium calyceal stone of left kidney" but you only have "Urolithiasis"), call expand(ecl="< <seedId>", filter=<the ORIGINAL mention words>) to list DESCENDANTS, and pick the most specific descendant that is STILL FAITHFUL to the original mention — i.e. it does not add any site/cause/severity/subtype the original text does not state. Never descend past what the original mention says.
 
-REJECT a candidate that is more specific than the mention, a different concept that merely shares words ("low platelet count" ≠ "HELLP syndrome"; "Abdomen: benign" ≠ "Adenoma"), the opposite meaning, or a risk/status concept for an actual finding. Wording differences are fine: "high blood pressure" ≡ "Hypertensive disorder"; "shortness of breath" ≡ "Dyspnea".
+REJECT a candidate that is MORE SPECIFIC than the ORIGINAL mention (adds unstated site/cause/severity/subtype/larger syndrome), a different concept that merely shares words ("low platelet count" ≠ "HELLP syndrome"; "Abdomen: benign" ≠ "Adenoma"), the opposite meaning, or a risk/status concept for an actual finding. Wording differences are fine: "high blood pressure" ≡ "Hypertensive disorder"; "shortness of breath" ≡ "Dyspnea".
 
 Ignore negation: the context field records absence separately — always code the POSITIVE concept ("no fever" → Fever).
 

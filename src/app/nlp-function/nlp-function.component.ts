@@ -798,8 +798,9 @@ Ignore polarity/negation: "context" records absence separately, so always keep t
     // Human-readable description of a tool action for the live status line.
     const describe = (a: { name: string; args: any }): string => {
       if (a.name === 'lookup') { return `looking up ${a.args?.code ?? ''}`; }
-      const ecl = String(a.args?.ecl ?? '');
-      if (ecl.trim().startsWith('>')) { return `finding ancestors of ${ecl.replace(/[^0-9]/g, '') || 'concept'}`; }
+      const ecl = String(a.args?.ecl ?? '').trim();
+      if (ecl.startsWith('>')) { return `finding ancestors of ${ecl.replace(/[^0-9]/g, '') || 'concept'}`; }
+      if (ecl.startsWith('<')) { return `finding more specific under ${ecl.replace(/[^0-9]/g, '') || 'concept'}`; }
       return `searching "${a.args?.filter ?? a.args?.ecl ?? ''}"`;
     };
     for (const entity of work) {
